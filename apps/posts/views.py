@@ -1,24 +1,14 @@
-from django.shortcuts import render, redirect
-from django.contrib.auth.decorators import login_required
+from rest_framework import viewsets, permissions
+from rest_framework.response import Response
 from .models import Post
-from .forms import PostForm  # Importamos el formulario que acabamos de crear
+from .serializers import PostSerializer
 
-@login_required
-def home_view(request):
-    if request.method == 'POST':
-        form = PostForm(request.POST, request.FILES) # request.FILES es clave para la imagen
-        if form.is_valid():
-            post = form.save(commit=False)
-            post.user = request.user  # Vinculamos el post automáticamente al usuario logueado
-            post.save()
-            return redirect('home')  # Recargamos la página para ver el post nuevo
-    else:
-        form = PostForm()
+class PostViewSet(viewsets.ModelViewSet):
+    serializer_class = PostSerializer
+    permission_classes = [permissions.IsAuthenticated]
 
-    posts = Post.objects.all()
-    
-    context = {
-        'posts': posts,
-        'form': form  # Le pasamos el formulario al HTML
-    }
-    return render(request, 'home.html', context)
+    def get_queryset(self):
+        return Post.objects.select_related('user').all()
+
+    def perform_create(self, serializer):
+        serializer.save(user=self.request.user)
