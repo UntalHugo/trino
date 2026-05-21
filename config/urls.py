@@ -10,6 +10,7 @@ urlpatterns = [
     path('api/users/', include('apps.users.urls')),
     path('api/auth/login/', TokenObtainPairView.as_view(), name='login'),
     path('api/auth/refresh/', TokenRefreshView.as_view(), name='refresh'),
+    path('api/search/', include('apps.search.urls')),
 ]
 
 if settings.DEBUG:

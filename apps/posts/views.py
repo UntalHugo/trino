@@ -1,4 +1,4 @@
-from rest_framework import viewsets, permissions, generics
+from rest_framework import viewsets, permissions, parsers
 from rest_framework.response import Response
 from rest_framework.decorators import api_view, permission_classes
 from .models import Post
@@ -7,6 +7,7 @@ from .serializers import PostSerializer
 class PostViewSet(viewsets.ModelViewSet):
     serializer_class = PostSerializer
     permission_classes = [permissions.IsAuthenticated]
+    parser_classes = [parsers.MultiPartParser, parsers.FormParser, parsers.JSONParser]
 
     def get_queryset(self):
         return Post.objects.select_related('user').all()

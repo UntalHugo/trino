@@ -38,6 +38,8 @@ INSTALLED_APPS = [
     'django.contrib.sessions',
     'django.contrib.messages',
     'django.contrib.staticfiles',
+    'cloudinary_storage',
+    'cloudinary',
     # Librerías
     'rest_framework',
     'corsheaders',
@@ -45,6 +47,8 @@ INSTALLED_APPS = [
     'apps.users',
     'apps.posts',
     'apps.interactions',
+    'apps.search'
+
 ]
 
 MIDDLEWARE = [
@@ -143,3 +147,16 @@ LOGIN_REDIRECT_URL = 'home'  # A dónde va el usuario después de iniciar sesió
 LOGOUT_REDIRECT_URL = 'login' # A dónde va si se desloguea
 MEDIA_URL = '/media/'
 MEDIA_ROOT = BASE_DIR / 'media'
+
+import environ
+
+env = environ.Env()
+environ.Env.read_env(BASE_DIR / '.env')
+
+CLOUDINARY_STORAGE = {
+    'CLOUD_NAME': env('CLOUDINARY_CLOUD_NAME'),
+    'API_KEY': env('CLOUDINARY_API_KEY'),
+    'API_SECRET': env('CLOUDINARY_API_SECRET'),
+}
+
+DEFAULT_FILE_STORAGE = 'cloudinary_storage.storage.MediaCloudinaryStorage'
