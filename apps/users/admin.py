@@ -7,3 +7,4 @@ class CustomUserAdmin(UserAdmin):
     fieldsets = UserAdmin.fieldsets + (
         ('Perfil', {'fields': ('bio', 'avatar', 'following')}),
     )
+
