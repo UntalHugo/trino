@@ -1,4 +1,5 @@
 from rest_framework import viewsets, permissions
+from rest_framework.decorators import action
 from rest_framework.response import Response
 from .models import Post
 from .serializers import PostSerializer
@@ -12,3 +13,12 @@ class PostViewSet(viewsets.ModelViewSet):
 
     def perform_create(self, serializer):
         serializer.save(user=self.request.user)
+
+    @action(detail=False, methods=['get'], url_path='feed')
+    def feed(self, request):
+        following = request.user.following.all()
+        posts = Post.objects.filter(
+            user__in=following
+        ).select_related('user').order_by('-created_at')
+        serializer = self.get_serializer(posts, many=True)
+        return Response(serializer.data)
