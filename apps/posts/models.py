@@ -20,19 +20,38 @@ class Post(models.Model):
     content = models.TextField(max_length=280)
     image = models.ImageField(upload_to='posts/', blank=True, null=True)
     hashtags = models.ManyToManyField(Hashtag, blank=True, related_name='posts')
+    mentions = models.ManyToManyField(
+        settings.AUTH_USER_MODEL,
+        blank=True,
+        related_name='mentioned_in'
+    )
     created_at = models.DateTimeField(auto_now_add=True)
     updated_at = models.DateTimeField(auto_now=True)
 
     class Meta:
         ordering = ['-created_at']
 
+    def __str__(self):
+        return f"{self.user.username} - {self.content[:50]}"
+
+    def extract_hashtags(self):
+        return re.findall(r'#(\w+)', self.content)
+
+    def extract_mentions(self):
+        return re.findall(r'@(\w+)', self.content)
+
     def save(self, *args, **kwargs):
         super().save(*args, **kwargs)
         self.hashtags.clear()
-        tags = re.findall(r'#(\w+)', self.content)
-        for tag in tags:
+        self.mentions.clear()
+        for tag in self.extract_hashtags():
             hashtag, _ = Hashtag.objects.get_or_create(name=tag.lower())
             self.hashtags.add(hashtag)
-
-    def __str__(self):
-        return f"{self.user.username} - {self.content[:50]}"
+        from django.contrib.auth import get_user_model
+        User = get_user_model()
+        for username in self.extract_mentions():
+            try:
+                user = User.objects.get(username=username)
+                self.mentions.add(user)
+            except User.DoesNotExist:
+                pass
