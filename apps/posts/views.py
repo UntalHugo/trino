@@ -4,6 +4,7 @@ from rest_framework.response import Response
 from .models import Post
 from .serializers import PostSerializer
 
+
 class PostViewSet(viewsets.ModelViewSet):
     serializer_class = PostSerializer
     permission_classes = [permissions.IsAuthenticated]
@@ -20,5 +21,9 @@ class PostViewSet(viewsets.ModelViewSet):
         posts = Post.objects.filter(
             user__in=following
         ).select_related('user').order_by('-created_at')
+        page = self.paginate_queryset(posts)
+        if page is not None:
+            serializer = self.get_serializer(page, many=True)
+            return self.get_paginated_response(serializer.data)
         serializer = self.get_serializer(posts, many=True)
         return Response(serializer.data)
