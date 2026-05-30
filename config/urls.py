@@ -7,6 +7,7 @@ from rest_framework_simplejwt.views import TokenObtainPairView, TokenRefreshView
 
 urlpatterns = [
     path('admin/', admin.site.urls),
+    path('auth/', include('social_django.urls', namespace='social')),
     path('api/posts/', include('apps.posts.urls')),
     path('api/users/', include('apps.users.urls')),
     path('api/auth/login/', TokenObtainPairView.as_view(), name='login'),
@@ -14,6 +15,7 @@ urlpatterns = [
     path('api/search/', include('apps.search.urls')),
     path('api/', include('apps.interactions.urls')),
     path('feed/', TemplateView.as_view(template_name='feed.html'), name='feed'),
+    
 ]
 
 if settings.DEBUG:
