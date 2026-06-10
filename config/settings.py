@@ -94,7 +94,7 @@ REST_FRAMEWORK = {
 }
 
 AUTH_USER_MODEL = 'users.User'
-LOGIN_REDIRECT_URL = '/feed/'
+LOGIN_REDIRECT_URL = '/auth/complete/'
 LOGOUT_REDIRECT_URL = 'login'
 
 MEDIA_URL = '/media/'
