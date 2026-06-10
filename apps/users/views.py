@@ -42,6 +42,17 @@ def follow_user(request, username):
 
 @api_view(['GET'])
 @permission_classes([permissions.IsAuthenticated])
+def suggest_users(request):
+    following = request.user.following.all()
+    users = User.objects.exclude(
+        id__in=[request.user.id] + [u.id for u in following]
+    )[:5]
+    serializer = UserProfileSerializer(users, many=True)
+    return Response(serializer.data)
+
+
+@api_view(['GET'])
+@permission_classes([permissions.IsAuthenticated])
 def get_session_token(request):
     refresh = RefreshToken.for_user(request.user)
     return Response({

@@ -742,16 +742,7 @@
 
     <div class="widget">
         <h3>A quién seguir</h3>
-        <div id="suggestions-container">
-            <div class="suggest-user">
-                <div class="avatar" style="width:32px;height:32px;font-size:0.75rem;">T</div>
-                <div class="suggest-info">
-                    <div class="suggest-name">Tobias</div>
-                    <div class="suggest-handle">@Tobydou21</div>
-                </div>
-                <button class="btn-follow-small" onclick="followUser('Tobydou21', this)">Seguir</button>
-            </div>
-        </div>
+        <div id="suggestions-container"></div>
     </div>
 </aside>
 
@@ -1066,13 +1057,40 @@
     // ── FOLLOW ──
     async function followUser(username, btn) {
         try {
-            const res = await fetchWithAuth(`/api/users/follow/${username}/`, { method: 'POST' });
+            const res = await fetchWithAuth('/api/users/follow/' + username + '/', { method: 'POST' });
             if (!res || !res.ok) throw new Error();
             const data = await res.json();
             btn.textContent = data.status === 'siguiendo' ? 'Siguiendo' : 'Seguir';
             if (data.status === 'siguiendo') { btn.style.background = 'var(--accent)'; btn.style.color = '#fff'; }
             else { btn.style.background = ''; btn.style.color = ''; }
         } catch (e) { console.error('Error en follow:', e); }
+    }
+
+    async function loadSuggestions() {
+        try {
+            const res = await fetchWithAuth('/api/users/suggestions/');
+            if (!res || !res.ok) return;
+            const users = await res.json();
+            const container = document.getElementById('suggestions-container');
+            if (!users || users.length === 0) {
+                container.innerHTML = '<div style="padding:8px;color:var(--text-secondary);font-size:0.85rem;">No hay sugerencias</div>';
+                return;
+            }
+            container.innerHTML = users.map(u => {
+                const initial = (u.username || '?')[0].toUpperCase();
+                const avatarHtml = u.avatar
+                    ? '<img src="' + u.avatar + '" style="width:32px;height:32px;border-radius:50%;object-fit:cover;">'
+                    : '<div class="avatar" style="width:32px;height:32px;font-size:0.75rem;">' + initial + '</div>';
+                return '<div class="suggest-user">'
+                    + avatarHtml
+                    + '<div class="suggest-info">'
+                    + '<div class="suggest-name">' + u.username + '</div>'
+                    + '<div class="suggest-handle">@' + u.username + '</div>'
+                    + '</div>'
+                    + '<button class="btn-follow-small" onclick="followUser(\'' + u.username + '\', this)">Seguir</button>'
+                    + '</div>';
+            }).join('');
+        } catch (e) {}
     }
 
     // ── SEARCH ──
@@ -1230,7 +1248,7 @@
     document.getElementById('post-input').addEventListener('input', updateCharCount);
 
     loadTheme();
-    loadProfile().then(() => loadFeed());
+    loadProfile().then(() => { loadFeed(); loadSuggestions(); });
 </script>
 
 </body>

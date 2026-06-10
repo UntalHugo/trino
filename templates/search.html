@@ -729,12 +729,12 @@
 
     async function followUser(username, btn) {
         try {
-            const res = await fetchWithAuth(`/api/users/follow/${username}/`, { method: 'POST' });
-            if (!res || !res.ok) return;
+            const res = await fetchWithAuth('/api/users/follow/' + username + '/', { method: 'POST' });
+            if (!res || !res.ok) throw new Error();
             const data = await res.json();
             btn.textContent = data.status === 'siguiendo' ? 'Siguiendo' : 'Seguir';
             btn.classList.toggle('following', data.status === 'siguiendo');
-        } catch (e) {}
+        } catch (e) { console.error('Error en follow:', e); }
     }
 
     function showError(msg) {
