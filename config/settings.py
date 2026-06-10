@@ -27,6 +27,7 @@ INSTALLED_APPS = [
     'apps.posts',
     'apps.interactions',
     'apps.search',
+    'rest_framework_simplejwt.token_blacklist',
 ]
 
 MIDDLEWARE = [
@@ -130,3 +131,12 @@ SOCIAL_AUTH_GOOGLE_OAUTH2_SECRET = env('GOOGLE_CLIENT_SECRET', default='')
 SOCIAL_AUTH_GITHUB_KEY = env('GITHUB_CLIENT_ID', default='')
 SOCIAL_AUTH_GITHUB_SECRET = env('GITHUB_CLIENT_SECRET', default='')
 SOCIAL_AUTH_URL_NAMESPACE = 'social'
+
+from datetime import timedelta
+
+SIMPLE_JWT = {
+    'ACCESS_TOKEN_LIFETIME': timedelta(minutes=60),
+    'REFRESH_TOKEN_LIFETIME': timedelta(days=7),
+    'ROTATE_REFRESH_TOKENS': True,
+    'BLACKLIST_AFTER_ROTATION': True,
+}

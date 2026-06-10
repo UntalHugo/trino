@@ -5,6 +5,7 @@ from django.conf.urls.static import static
 from django.views.generic import TemplateView
 from rest_framework_simplejwt.views import TokenObtainPairView, TokenRefreshView
 from django.contrib.auth import views as auth_views
+from rest_framework_simplejwt.views import TokenObtainPairView, TokenRefreshView, TokenBlacklistView
 
 urlpatterns = [
     path('admin/', admin.site.urls),
@@ -21,6 +22,8 @@ urlpatterns = [
     path('post/<int:pk>/', TemplateView.as_view(template_name='post_detail.html'), name='post-detail'),
     path('accounts/login/', auth_views.LoginView.as_view(), name='django-login'),
     path('auth/complete/', TemplateView.as_view(template_name='oauth_complete.html'), name='oauth-complete'),
+    path('api/auth/logout/', TokenBlacklistView.as_view(), name='logout'),  # ← agregar
+
 ]
 
 if settings.DEBUG:
