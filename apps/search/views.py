@@ -4,7 +4,7 @@ from rest_framework.response import Response
 from apps.posts.models import Post, Hashtag
 from apps.posts.serializers import PostSerializer
 from apps.users.models import User
-from apps.users.serializers import UserProfileSerializer
+from apps.users.serializers import PublicUserSerializer      # ← cambia el import
 
 
 @api_view(['GET'])
@@ -24,6 +24,6 @@ def search_view(request):
     )
     return Response({
         'posts': PostSerializer(posts, many=True).data,
-        'users': UserProfileSerializer(users, many=True).data,
+        'users': PublicUserSerializer(users, many=True).data,  # ← cambia el serializer
         'hashtags': [f"#{h.name}" for h in hashtags],
     })
