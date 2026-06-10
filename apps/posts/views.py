@@ -11,7 +11,11 @@ class PostViewSet(viewsets.ModelViewSet):
     parser_classes = [parsers.MultiPartParser, parsers.FormParser, parsers.JSONParser]
 
     def get_queryset(self):
-        return Post.objects.select_related('user').all()
+        qs = Post.objects.select_related('user').all()
+        username = self.request.query_params.get('username')
+        if username:
+            qs = qs.filter(user__username=username)
+        return qs
 
     def perform_create(self, serializer):
         serializer.save(user=self.request.user)

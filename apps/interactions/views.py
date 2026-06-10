@@ -16,8 +16,8 @@ def toggle_like(request, post_id):
     like, created = Like.objects.get_or_create(user=request.user, post=post)
     if not created:
         like.delete()
-        return Response({'status': 'like eliminado'})
-    return Response({'status': 'like agregado'})
+        return Response({'status': 'unliked', 'likes_count': post.likes.count()})
+    return Response({'status': 'liked', 'likes_count': post.likes.count()})
 
 
 class CommentListCreateView(generics.ListCreateAPIView):
