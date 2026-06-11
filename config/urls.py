@@ -21,6 +21,7 @@ urlpatterns = [
     path('post/<int:pk>/', TemplateView.as_view(template_name='post_detail.html'), name='post-detail'),
     path('accounts/login/', auth_views.LoginView.as_view(), name='django-login'),
     path('auth/complete/', TemplateView.as_view(template_name='oauth_complete.html'), name='oauth-complete'),
+    path('register/', TemplateView.as_view(template_name='registration/register.html'), name='register')
 ]
 
 if settings.DEBUG:
