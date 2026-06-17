@@ -28,7 +28,11 @@ class CommentListCreateView(generics.ListCreateAPIView):
         return Comment.objects.filter(post_id=self.kwargs['post_id'])
 
     def perform_create(self, serializer):
-        post = Post.objects.get(id=self.kwargs['post_id'])
+        try:
+            post = Post.objects.get(id=self.kwargs['post_id'])
+        except Post.DoesNotExist:
+            from rest_framework.exceptions import NotFound
+            raise NotFound('Post no encontrado.')
         serializer.save(user=self.request.user, post=post)
 
 
