@@ -19,6 +19,8 @@ urlpatterns = [
     path('feed/', TemplateView.as_view(template_name='feed.html'), name='feed'),
     path('search/', TemplateView.as_view(template_name='search.html'), name='search'),
     path('profile/', TemplateView.as_view(template_name='profile.html'), name='profile'),
+    path('notifications/', TemplateView.as_view(template_name='notifications.html'), name='notifications-page'),
+    path('messages/', TemplateView.as_view(template_name='messages.html'), name='messages-page'),
     path('post/<int:pk>/', TemplateView.as_view(template_name='post_detail.html'), name='post-detail'),
     path('accounts/login/', auth_views.LoginView.as_view(), name='django-login'),
     path('auth/complete/', TemplateView.as_view(template_name='oauth_complete.html'), name='oauth-complete'),
