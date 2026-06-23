@@ -1,6 +1,7 @@
 from django.db import models
 from django.conf import settings
 
+
 class Like(models.Model):
     user = models.ForeignKey(
         settings.AUTH_USER_MODEL,
@@ -63,14 +64,12 @@ class Notification(models.Model):
     COMMENT = 'comment'
     FOLLOW = 'follow'
     MENTION = 'mention'
-
     TYPE_CHOICES = [
         (LIKE, 'Like'),
         (COMMENT, 'Comentario'),
         (FOLLOW, 'Seguidor'),
         (MENTION, 'Mencion'),
     ]
-
     user = models.ForeignKey(
         settings.AUTH_USER_MODEL,
         on_delete=models.CASCADE,

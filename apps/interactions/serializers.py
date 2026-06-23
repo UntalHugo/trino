@@ -1,6 +1,7 @@
 from rest_framework import serializers
 from .models import Like, Comment, Message, Notification
 
+
 class LikeSerializer(serializers.ModelSerializer):
     user = serializers.StringRelatedField(read_only=True)
 

@@ -1,9 +1,10 @@
-from rest_framework import generics, permissions, status
+from rest_framework import generics, permissions
 from rest_framework.decorators import api_view, permission_classes
 from rest_framework.response import Response
 from .models import Like, Comment, Message, Notification
 from .serializers import LikeSerializer, CommentSerializer, MessageSerializer, NotificationSerializer
 from apps.posts.models import Post
+
 
 @api_view(['POST'])
 @permission_classes([permissions.IsAuthenticated])
@@ -12,12 +13,11 @@ def toggle_like(request, post_id):
         post = Post.objects.get(id=post_id)
     except Post.DoesNotExist:
         return Response({'error': 'Post no encontrado.'}, status=404)
-
     like, created = Like.objects.get_or_create(user=request.user, post=post)
     if not created:
         like.delete()
-        return Response({'status': 'like eliminado'})
-    return Response({'status': 'like agregado'})
+        return Response({'status': 'unliked', 'likes_count': post.likes.count()})
+    return Response({'status': 'liked', 'likes_count': post.likes.count()})
 
 
 class CommentListCreateView(generics.ListCreateAPIView):
@@ -59,4 +59,4 @@ class NotificationListView(generics.ListAPIView):
 @permission_classes([permissions.IsAuthenticated])
 def mark_notifications_read(request):
     Notification.objects.filter(user=request.user, read=False).update(read=True)
-    return Response({'status': 'notificaciones marcadas como leidas'})
+    return Response({'status': 'notificaciones marcadas como leídas'})

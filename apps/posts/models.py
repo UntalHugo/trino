@@ -2,11 +2,13 @@ from django.db import models
 from django.conf import settings
 import re
 
+
 class Hashtag(models.Model):
     name = models.CharField(max_length=100, unique=True)
+    created_at = models.DateTimeField(auto_now_add=True)
 
     def __str__(self):
-        return f"#{self.name}"
+        return f'#{self.name}'
 
 
 class Post(models.Model):
@@ -37,3 +39,19 @@ class Post(models.Model):
 
     def extract_mentions(self):
         return re.findall(r'@(\w+)', self.content)
+
+    def save(self, *args, **kwargs):
+        super().save(*args, **kwargs)
+        self.hashtags.clear()
+        self.mentions.clear()
+        for tag in self.extract_hashtags():
+            hashtag, _ = Hashtag.objects.get_or_create(name=tag.lower())
+            self.hashtags.add(hashtag)
+        from django.contrib.auth import get_user_model
+        User = get_user_model()
+        for username in self.extract_mentions():
+            try:
+                user = User.objects.get(username=username)
+                self.mentions.add(user)
+            except User.DoesNotExist:
+                pass

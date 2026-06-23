@@ -1,6 +1,9 @@
 from rest_framework import generics, permissions
 from rest_framework.response import Response
 from rest_framework.decorators import api_view, permission_classes
+from rest_framework_simplejwt.tokens import RefreshToken
+from django.contrib.auth import logout as django_logout
+from django.shortcuts import redirect
 from .models import User
 from .serializers import RegisterSerializer, UserProfileSerializer
 
@@ -35,3 +38,29 @@ def follow_user(request, username):
     else:
         request.user.following.add(target)
         return Response({'status': 'siguiendo'})
+
+
+@api_view(['GET'])
+@permission_classes([permissions.IsAuthenticated])
+def suggest_users(request):
+    following = request.user.following.all()
+    users = User.objects.exclude(
+        id__in=[request.user.id] + [u.id for u in following]
+    )[:5]
+    serializer = UserProfileSerializer(users, many=True)
+    return Response(serializer.data)
+
+
+@api_view(['GET'])
+@permission_classes([permissions.IsAuthenticated])
+def get_session_token(request):
+    refresh = RefreshToken.for_user(request.user)
+    return Response({
+        'access': str(refresh.access_token),
+        'refresh': str(refresh),
+    })
+
+
+def logout_user(request):
+    django_logout(request)
+    return redirect('/accounts/login/')

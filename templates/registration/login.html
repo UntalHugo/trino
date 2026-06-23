@@ -1,0 +1,263 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Trino — Iniciar sesión</title>
+    <link href="https://fonts.googleapis.com/css2?family=Syne:wght@400;600;700;800&family=DM+Sans:wght@300;400;500&display=swap" rel="stylesheet">
+    <style>
+        *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+        :root {
+            --bg: #0a0a0f;
+            --surface: #111118;
+            --border: #1e1e2e;
+            --accent: #6c63ff;
+            --accent-glow: rgba(108, 99, 255, 0.25);
+            --text: #e8e8f0;
+            --muted: #5a5a7a;
+            --error: #ff4f6d;
+        }
+
+        body {
+            background: var(--bg);
+            color: var(--text);
+            font-family: 'DM Sans', sans-serif;
+            min-height: 100vh;
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            overflow: hidden;
+        }
+
+        .left-panel {
+            position: relative;
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+            padding: 3rem;
+            overflow: hidden;
+        }
+
+        .left-panel::before {
+            content: '';
+            position: absolute;
+            inset: 0;
+            background: radial-gradient(ellipse 80% 60% at 40% 50%, rgba(108,99,255,0.15) 0%, transparent 70%),
+                        radial-gradient(ellipse 50% 40% at 80% 20%, rgba(99,179,255,0.08) 0%, transparent 60%);
+        }
+
+        .grid-bg {
+            position: absolute;
+            inset: 0;
+            background-image:
+                linear-gradient(rgba(108,99,255,0.04) 1px, transparent 1px),
+                linear-gradient(90deg, rgba(108,99,255,0.04) 1px, transparent 1px);
+            background-size: 40px 40px;
+        }
+
+        .left-content { position: relative; z-index: 1; text-align: center; }
+
+        .bird-icon {
+            font-size: 5rem;
+            display: block;
+            margin-bottom: 1.5rem;
+            filter: drop-shadow(0 0 30px var(--accent-glow));
+            animation: float 4s ease-in-out infinite;
+        }
+
+        @keyframes float {
+            0%, 100% { transform: translateY(0); }
+            50% { transform: translateY(-12px); }
+        }
+
+        .left-content h1 {
+            font-family: 'Syne', sans-serif;
+            font-size: 3.5rem;
+            font-weight: 800;
+            letter-spacing: -2px;
+            line-height: 1;
+            background: linear-gradient(135deg, #e8e8f0 30%, var(--accent));
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            background-clip: text;
+            margin-bottom: 1rem;
+        }
+
+        .left-content p { color: var(--muted); font-size: 1rem; font-weight: 300; max-width: 280px; line-height: 1.6; }
+
+        .orbs { position: absolute; inset: 0; pointer-events: none; }
+        .orb { position: absolute; border-radius: 50%; filter: blur(60px); opacity: 0.15; }
+        .orb-1 { width: 300px; height: 300px; background: var(--accent); top: -80px; left: -80px; animation: drift 8s ease-in-out infinite; }
+        .orb-2 { width: 200px; height: 200px; background: #63b3ff; bottom: -50px; right: -50px; animation: drift 10s ease-in-out infinite reverse; }
+
+        @keyframes drift {
+            0%, 100% { transform: translate(0, 0); }
+            50% { transform: translate(20px, 20px); }
+        }
+
+        .right-panel {
+            background: var(--surface);
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+            padding: 3rem 2.5rem;
+            border-left: 1px solid var(--border);
+        }
+
+        .form-container { width: 100%; max-width: 380px; }
+
+        .form-header { margin-bottom: 2.5rem; }
+        .form-header h2 { font-family: 'Syne', sans-serif; font-size: 1.8rem; font-weight: 700; color: var(--text); margin-bottom: 0.4rem; }
+        .form-header p { color: var(--muted); font-size: 0.875rem; }
+
+        .field { margin-bottom: 1.25rem; }
+        .field label { display: block; font-size: 0.78rem; font-weight: 500; color: var(--muted); text-transform: uppercase; letter-spacing: 0.08em; margin-bottom: 0.5rem; }
+        .field input { width: 100%; background: var(--bg); border: 1px solid var(--border); border-radius: 10px; padding: 0.85rem 1rem; color: var(--text); font-family: 'DM Sans', sans-serif; font-size: 0.95rem; transition: border-color 0.2s, box-shadow 0.2s; outline: none; }
+        .field input:focus { border-color: var(--accent); box-shadow: 0 0 0 3px var(--accent-glow); }
+        .field input::placeholder { color: var(--muted); }
+
+        .error-msg { background: rgba(255, 79, 109, 0.08); border: 1px solid rgba(255, 79, 109, 0.2); border-radius: 8px; padding: 0.7rem 1rem; color: var(--error); font-size: 0.825rem; margin-bottom: 1.25rem; }
+
+        .btn-login { width: 100%; background: var(--accent); color: #fff; border: none; border-radius: 10px; padding: 0.9rem; font-family: 'Syne', sans-serif; font-size: 1rem; font-weight: 700; cursor: pointer; transition: opacity 0.2s, transform 0.1s, box-shadow 0.2s; box-shadow: 0 4px 20px var(--accent-glow); margin-top: 0.5rem; }
+        .btn-login:hover { opacity: 0.9; box-shadow: 0 6px 28px rgba(108,99,255,0.4); }
+        .btn-login:active { transform: scale(0.98); }
+        .btn-login:disabled { opacity: 0.5; cursor: not-allowed; }
+
+        .divider { display: flex; align-items: center; gap: 0.75rem; margin: 1.5rem 0; color: var(--muted); font-size: 0.78rem; }
+        .divider::before, .divider::after { content: ''; flex: 1; height: 1px; background: var(--border); }
+
+        .oauth-buttons { display: flex; flex-direction: column; gap: 0.75rem; }
+        .btn-oauth { display: flex; align-items: center; justify-content: center; gap: 0.6rem; width: 100%; background: var(--bg); border: 1px solid var(--border); border-radius: 10px; padding: 0.75rem; color: var(--text); font-family: 'DM Sans', sans-serif; font-size: 0.875rem; font-weight: 500; text-decoration: none; transition: border-color 0.2s, background 0.2s; }
+        .btn-oauth:hover { border-color: var(--accent); background: rgba(108,99,255,0.05); }
+        .btn-oauth svg { width: 18px; height: 18px; flex-shrink: 0; }
+
+        .footer-link { text-align: center; margin-top: 2rem; font-size: 0.825rem; color: var(--muted); }
+        .footer-link a { color: var(--accent); text-decoration: none; font-weight: 500; }
+        .footer-link a:hover { text-decoration: underline; }
+
+        @media (max-width: 768px) {
+            body { grid-template-columns: 1fr; }
+            .left-panel { display: none; }
+            .right-panel { padding: 2rem 1.5rem; }
+        }
+    </style>
+</head>
+<body>
+
+<div class="left-panel">
+    <div class="grid-bg"></div>
+    <div class="orbs">
+        <div class="orb orb-1"></div>
+        <div class="orb orb-2"></div>
+    </div>
+    <div class="left-content">
+        <span class="bird-icon">🐦</span>
+        <h1>Trino</h1>
+        <p>Conectá con el mundo. Compartí lo que pensás, en tiempo real.</p>
+    </div>
+</div>
+
+<div class="right-panel">
+    <div class="form-container">
+        <div class="form-header">
+            <h2>Bienvenido de nuevo</h2>
+            <p>Ingresá tus datos para continuar</p>
+        </div>
+
+        <div class="error-msg" id="error-msg" style="display:none;"></div>
+
+        <form onsubmit="event.preventDefault(); doLogin();">
+            <div class="field">
+                <label for="id_username">Usuario</label>
+                <input type="text" id="id_username" name="username" placeholder="tu_usuario" autocomplete="username" required autofocus>
+            </div>
+            <div class="field">
+                <label for="id_password">Contraseña</label>
+                <input type="password" id="id_password" name="password" placeholder="••••••••" autocomplete="current-password" required>
+            </div>
+            <button type="submit" class="btn-login" id="btn-login">Iniciar sesión →</button>
+        </form>
+
+        <div class="divider">o continuá con</div>
+
+        <div class="oauth-buttons">
+            <a href="{% url 'social:begin' 'google-oauth2' %}" class="btn-oauth">
+                <svg viewBox="0 0 24 24" fill="none">
+                    <path d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92c-.26 1.37-1.04 2.53-2.21 3.31v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.09z" fill="#4285F4"/>
+                    <path d="M12 23c2.97 0 5.46-.98 7.28-2.66l-3.57-2.77c-.98.66-2.23 1.06-3.71 1.06-2.86 0-5.29-1.93-6.16-4.53H2.18v2.84C3.99 20.53 7.7 23 12 23z" fill="#34A853"/>
+                    <path d="M5.84 14.09c-.22-.66-.35-1.36-.35-2.09s.13-1.43.35-2.09V7.07H2.18C1.43 8.55 1 10.22 1 12s.43 3.45 1.18 4.93l3.66-2.84z" fill="#FBBC05"/>
+                    <path d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.07l3.66 2.84c.87-2.6 3.3-4.53 6.16-4.53z" fill="#EA4335"/>
+                </svg>
+                Continuar con Google
+            </a>
+            <a href="{% url 'social:begin' 'github' %}" class="btn-oauth">
+                <svg viewBox="0 0 24 24" fill="currentColor">
+                    <path d="M12 2C6.477 2 2 6.484 2 12.017c0 4.425 2.865 8.18 6.839 9.504.5.092.682-.217.682-.483 0-.237-.008-.868-.013-1.703-2.782.605-3.369-1.343-3.369-1.343-.454-1.158-1.11-1.466-1.11-1.466-.908-.62.069-.608.069-.608 1.003.07 1.531 1.032 1.531 1.032.892 1.53 2.341 1.088 2.91.832.092-.647.35-1.088.636-1.338-2.22-.253-4.555-1.113-4.555-4.951 0-1.093.39-1.988 1.029-2.688-.103-.253-.446-1.272.098-2.65 0 0 .84-.27 2.75 1.026A9.564 9.564 0 0112 6.844c.85.004 1.705.115 2.504.337 1.909-1.296 2.747-1.027 2.747-1.027.546 1.379.202 2.398.1 2.651.64.7 1.028 1.595 1.028 2.688 0 3.848-2.339 4.695-4.566 4.943.359.309.678.92.678 1.855 0 1.338-.012 2.419-.012 2.747 0 .268.18.58.688.482A10.019 10.019 0 0022 12.017C22 6.484 17.522 2 12 2z"/>
+                </svg>
+                Continuar con GitHub
+            </a>
+        </div>
+
+        <div class="footer-link">
+            ¿No tenés cuenta? <a href="/api/users/register/">Registrate</a>
+        </div>
+    </div>
+</div>
+
+<script>
+    // Si ya tiene token, ir directo al feed
+    if (localStorage.getItem('access_token')) {
+        window.location.href = '/feed/';
+    }
+
+    async function doLogin() {
+        const username = document.getElementById('id_username').value.trim();
+        const password = document.getElementById('id_password').value;
+        const btn = document.getElementById('btn-login');
+        const errorMsg = document.getElementById('error-msg');
+
+        if (!username || !password) {
+            showError('Completá todos los campos.');
+            return;
+        }
+
+        btn.disabled = true;
+        btn.textContent = 'Ingresando...';
+        errorMsg.style.display = 'none';
+
+        try {
+            const res = await fetch('/api/auth/login/', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ username, password })
+            });
+
+            if (!res.ok) {
+                showError('Usuario o contraseña incorrectos.');
+                return;
+            }
+
+            const data = await res.json();
+            localStorage.setItem('access_token', data.access);
+            localStorage.setItem('refresh_token', data.refresh);
+            window.location.href = '/feed/';
+
+        } catch (e) {
+            showError('Error de conexión. Intentá de nuevo.');
+        } finally {
+            btn.disabled = false;
+            btn.textContent = 'Iniciar sesión →';
+        }
+    }
+
+    function showError(msg) {
+        const el = document.getElementById('error-msg');
+        el.textContent = '⚠ ' + msg;
+        el.style.display = 'block';
+    }
+</script>
+
+</body>
+</html>

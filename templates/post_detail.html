@@ -1,0 +1,766 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Trino — Publicación</title>
+    <link href="https://fonts.googleapis.com/css2?family=Syne:wght@400;600;700;800&family=DM+Sans:wght@300;400;500&display=swap" rel="stylesheet">
+    <style>
+        *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+        :root {
+            --bg: #0a0a0f;
+            --surface: #111118;
+            --surface2: #16161f;
+            --border: #1e1e2e;
+            --accent: #6c63ff;
+            --accent-glow: rgba(108, 99, 255, 0.2);
+            --text: #e8e8f0;
+            --muted: #5a5a7a;
+            --like: #ff4f6d;
+            --success: #4fffb0;
+        }
+
+        [data-theme="light"] {
+            --bg: #ffffff;
+            --surface: #f5f5f8;
+            --surface2: #e8e8f0;
+            --border: #d0d0da;
+            --accent: #6c63ff;
+            --accent-glow: rgba(108, 99, 255, 0.15);
+            --text: #0a0a0f;
+            --muted: #8a8aaa;
+            --like: #e0455e;
+            --success: #2ea87a;
+        }
+
+        body {
+            background: var(--bg);
+            color: var(--text);
+            font-family: 'DM Sans', sans-serif;
+            min-height: 100vh;
+            display: grid;
+            grid-template-columns: 260px 1fr 300px;
+            max-width: 1200px;
+            margin: 0 auto;
+        }
+
+        .sidebar-left {
+            padding: 1.5rem 1rem;
+            border-right: 1px solid var(--border);
+            position: sticky;
+            top: 0;
+            height: 100vh;
+            display: flex;
+            flex-direction: column;
+            gap: 0.25rem;
+        }
+
+        .logo {
+            font-family: 'Syne', sans-serif;
+            font-size: 1.8rem;
+            font-weight: 800;
+            color: var(--text);
+            padding: 0.75rem 1rem;
+            margin-bottom: 1rem;
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+            letter-spacing: -1px;
+            text-decoration: none;
+        }
+
+        .logo span { color: var(--accent); }
+
+        .nav-item {
+            display: flex;
+            align-items: center;
+            gap: 0.9rem;
+            padding: 0.75rem 1rem;
+            border-radius: 12px;
+            color: var(--text);
+            text-decoration: none;
+            font-size: 0.95rem;
+            font-weight: 500;
+            transition: background 0.15s, color 0.15s;
+            cursor: pointer;
+        }
+
+        .nav-item:hover { background: var(--surface2); }
+        .nav-item.active { color: var(--accent); background: rgba(108,99,255,0.08); }
+
+        .nav-icon { font-size: 1.2rem; width: 24px; text-align: center; }
+
+        .btn-logout {
+            background: none;
+            border: 1px solid rgba(255, 79, 109, 0.3);
+            border-radius: 12px;
+            padding: 0.65rem 1rem;
+            color: #ff4f6d;
+            font-family: 'DM Sans', sans-serif;
+            font-size: 0.85rem;
+            font-weight: 500;
+            cursor: pointer;
+            transition: background 0.15s, border-color 0.15s;
+            width: 100%;
+            margin-top: 0.5rem;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 0.5rem;
+        }
+
+        .btn-logout:hover { background: rgba(255, 79, 109, 0.1); border-color: #ff4f6d; }
+
+        .btn-theme {
+            background: none;
+            border: 1px solid var(--border);
+            border-radius: 12px;
+            padding: 0.65rem 1rem;
+            color: var(--text);
+            font-family: 'DM Sans', sans-serif;
+            font-size: 1rem;
+            cursor: pointer;
+            transition: background 0.15s, border-color 0.15s;
+            width: 100%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+
+        .btn-theme:hover { background: var(--surface2); border-color: var(--accent); }
+
+        .user-card {
+            margin-top: auto;
+            display: flex;
+            align-items: center;
+            gap: 0.75rem;
+            padding: 0.75rem 1rem;
+            border-radius: 12px;
+            cursor: pointer;
+            transition: background 0.15s;
+        }
+
+        .user-card:hover { background: var(--surface2); }
+
+        .avatar {
+            width: 38px; height: 38px;
+            border-radius: 50%;
+            background: linear-gradient(135deg, var(--accent), #63b3ff);
+            display: flex; align-items: center; justify-content: center;
+            font-weight: 700; font-size: 0.875rem; color: #fff;
+            flex-shrink: 0;
+        }
+
+        .user-info { flex: 1; overflow: hidden; }
+        .user-name { font-size: 0.875rem; font-weight: 600; }
+        .user-handle { font-size: 0.75rem; color: var(--muted); }
+
+        .main-content {
+            border-right: 1px solid var(--border);
+            min-height: 100vh;
+        }
+
+        .detail-header {
+            position: sticky;
+            top: 0;
+            background: rgba(10,10,15,0.85);
+            backdrop-filter: blur(12px);
+            border-bottom: 1px solid var(--border);
+            padding: 1rem 1.25rem;
+            z-index: 10;
+            display: flex;
+            align-items: center;
+            gap: 1rem;
+        }
+
+        .btn-back {
+            background: none;
+            border: none;
+            color: var(--text);
+            font-size: 1.25rem;
+            cursor: pointer;
+            padding: 0.25rem 0.5rem;
+            border-radius: 6px;
+            transition: background 0.15s;
+        }
+
+        .btn-back:hover { background: var(--surface2); }
+
+        .detail-header h2 {
+            font-family: 'Syne', sans-serif;
+            font-size: 1.1rem;
+            font-weight: 700;
+        }
+
+        .post-detail {
+            padding: 1.5rem 1.25rem;
+            border-bottom: 1px solid var(--border);
+            display: flex;
+            gap: 0.85rem;
+        }
+
+        .post-detail-avatar {
+            width: 46px; height: 46px;
+            border-radius: 50%;
+            background: linear-gradient(135deg, var(--accent), #63b3ff);
+            display: flex; align-items: center; justify-content: center;
+            font-weight: 700; font-size: 1.1rem; color: #fff;
+            flex-shrink: 0;
+        }
+
+        .post-detail-body { flex: 1; }
+
+        .post-detail-author {
+            font-weight: 700;
+            font-size: 1rem;
+        }
+
+        .post-detail-handle {
+            color: var(--muted);
+            font-size: 0.9rem;
+        }
+
+        .post-detail-content {
+            font-size: 1.05rem;
+            line-height: 1.6;
+            margin-top: 0.75rem;
+            color: var(--text);
+        }
+
+        .post-detail-content .hashtag { color: var(--accent); }
+        .post-detail-content .mention { color: #63b3ff; }
+
+        .post-detail-image {
+            width: 100%;
+            border-radius: 12px;
+            margin-top: 0.75rem;
+            max-height: 400px;
+            object-fit: cover;
+            border: 1px solid var(--border);
+        }
+
+        .post-detail-time {
+            margin-top: 0.75rem;
+            font-size: 0.8rem;
+            color: var(--muted);
+            padding-bottom: 0.75rem;
+            border-bottom: 1px solid var(--border);
+        }
+
+        .post-detail-actions {
+            display: flex;
+            gap: 2rem;
+            padding: 0.75rem 0;
+            border-bottom: 1px solid var(--border);
+        }
+
+        .action-btn {
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+            background: none;
+            border: none;
+            color: var(--muted);
+            font-size: 0.875rem;
+            cursor: pointer;
+            padding: 0.35rem 0.5rem;
+            border-radius: 20px;
+            transition: color 0.15s, background 0.15s;
+            font-family: 'DM Sans', sans-serif;
+        }
+
+        .action-btn:hover { background: rgba(108,99,255,0.08); color: var(--accent); }
+        .action-btn.liked { color: var(--like); }
+        .action-btn.liked:hover { background: rgba(255,79,109,0.08); color: var(--like); }
+        .action-btn span { font-size: 1.1rem; }
+
+        .comments-section { padding: 0; }
+
+        .comments-heading {
+            padding: 1rem 1.25rem;
+            font-family: 'Syne', sans-serif;
+            font-size: 0.9rem;
+            font-weight: 700;
+            border-bottom: 1px solid var(--border);
+        }
+
+        .comment-item {
+            display: flex;
+            gap: 0.75rem;
+            padding: 1rem 1.25rem;
+            border-bottom: 1px solid var(--border);
+        }
+
+        .comment-item:last-child { border-bottom: none; }
+
+        .comment-body { flex: 1; }
+        .comment-meta { display: flex; gap: 0.5rem; align-items: center; margin-bottom: 0.2rem; }
+        .comment-author { font-weight: 600; font-size: 0.85rem; cursor: pointer; }
+        .comment-author:hover { text-decoration: underline; }
+        .comment-time { font-size: 0.75rem; color: var(--muted); }
+        .comment-text { font-size: 0.9rem; line-height: 1.5; color: var(--text); }
+
+        .comments-empty {
+            text-align: center;
+            padding: 3rem 1.5rem;
+            color: var(--muted);
+        }
+
+        .comments-empty .icon { font-size: 2rem; display: block; margin-bottom: 0.75rem; }
+
+        .comment-composer {
+            display: flex;
+            gap: 0.75rem;
+            padding: 1rem 1.25rem;
+            border-top: 1px solid var(--border);
+            position: sticky;
+            bottom: 0;
+            background: var(--surface);
+        }
+
+        .comment-composer input {
+            flex: 1;
+            background: var(--surface2);
+            border: 1px solid var(--border);
+            border-radius: 20px;
+            padding: 0.7rem 1rem;
+            color: var(--text);
+            font-family: 'DM Sans', sans-serif;
+            font-size: 0.875rem;
+            outline: none;
+            transition: border-color 0.2s;
+        }
+
+        .comment-composer input:focus { border-color: var(--accent); }
+        .comment-composer input::placeholder { color: var(--muted); }
+
+        .btn-comment {
+            background: var(--accent);
+            color: #fff;
+            border: none;
+            border-radius: 20px;
+            padding: 0.5rem 1.25rem;
+            font-family: 'Syne', sans-serif;
+            font-size: 0.8rem;
+            font-weight: 700;
+            cursor: pointer;
+            transition: opacity 0.2s;
+            flex-shrink: 0;
+        }
+
+        .btn-comment:hover { opacity: 0.85; }
+        .btn-comment:disabled { opacity: 0.4; cursor: not-allowed; }
+
+        .loading {
+            text-align: center;
+            padding: 3rem;
+            color: var(--muted);
+        }
+
+        .error-state {
+            text-align: center;
+            padding: 4rem 2rem;
+            color: var(--muted);
+        }
+
+        .error-state .icon { font-size: 3rem; display: block; margin-bottom: 1rem; }
+        .error-state h3 { font-family: 'Syne', sans-serif; color: var(--text); margin-bottom: 0.5rem; }
+
+        .sidebar-right {
+            padding: 1.5rem 1rem;
+        }
+
+        .search-box {
+            position: relative;
+            margin-bottom: 1.5rem;
+        }
+
+        .search-box input {
+            width: 100%;
+            background: var(--surface2);
+            border: 1px solid var(--border);
+            border-radius: 20px;
+            padding: 0.65rem 1rem 0.65rem 2.25rem;
+            color: var(--text);
+            font-family: 'DM Sans', sans-serif;
+            font-size: 0.875rem;
+            outline: none;
+            transition: border-color 0.2s;
+        }
+
+        .search-box input:focus { border-color: var(--accent); }
+        .search-box input::placeholder { color: var(--muted); }
+
+        .search-icon {
+            position: absolute;
+            left: 0.85rem;
+            top: 50%;
+            transform: translateY(-50%);
+            color: var(--muted);
+            font-size: 0.9rem;
+        }
+
+        .widget {
+            background: var(--surface2);
+            border: 1px solid var(--border);
+            border-radius: 16px;
+            padding: 1.25rem;
+            margin-bottom: 1rem;
+        }
+
+        .widget h3 {
+            font-family: 'Syne', sans-serif;
+            font-size: 0.95rem;
+            font-weight: 700;
+            margin-bottom: 1rem;
+        }
+
+        @media (max-width: 1024px) {
+            body { grid-template-columns: 70px 1fr; }
+            .sidebar-right { display: none; }
+            .nav-item span:not(.nav-icon) { display: none; }
+            .logo span:last-child { display: none; }
+            .btn-post { padding: 0.85rem; font-size: 0; }
+            .btn-post::before { content: '✏️'; font-size: 1.1rem; }
+            .user-card .user-info { display: none; }
+        }
+
+        @media (max-width: 640px) {
+            body { grid-template-columns: 1fr; }
+            .sidebar-left { display: none; }
+        }
+    </style>
+</head>
+<body>
+
+<nav class="sidebar-left">
+    <a class="logo" href="/feed/">🐦 <span>Trino</span></a>
+
+    <a class="nav-item" href="/feed/">
+        <span class="nav-icon">🏠</span> Inicio
+    </a>
+    <a class="nav-item" href="/search/">
+        <span class="nav-icon">🔍</span> Explorar
+    </a>
+    <a class="nav-item" href="/profile/">
+        <span class="nav-icon">👤</span> Perfil
+    </a>
+
+    <button class="btn-logout" onclick="logout()">🚪 Cerrar sesión</button>
+
+    <button class="btn-theme" onclick="toggleTheme()" id="btn-theme" title="Cambiar tema">🌙</button>
+
+    <div class="user-card" id="user-card" onclick="window.location.href='/profile/'">
+        <div class="avatar" id="user-avatar">?</div>
+        <div class="user-info">
+            <div class="user-name" id="user-name">Cargando...</div>
+            <div class="user-handle" id="user-handle">@...</div>
+        </div>
+    </div>
+</nav>
+
+<main class="main-content" id="main-content">
+    <div class="detail-header">
+        <button class="btn-back" onclick="history.back()">←</button>
+        <h2>Publicación</h2>
+    </div>
+    <div id="post-container">
+        <div class="loading">Cargando publicación...</div>
+    </div>
+    <div class="comments-section" id="comments-section" style="display:none;">
+        <div class="comments-heading">Comentarios</div>
+        <div id="comments-list"></div>
+        <div class="comment-composer">
+            <input type="text" id="comment-input" placeholder="Escribí un comentario..." maxlength="280" onkeydown="if(event.key==='Enter'){submitComment()}">
+            <button class="btn-comment" id="btn-comment" onclick="submitComment()">Responder</button>
+        </div>
+    </div>
+</main>
+
+<aside class="sidebar-right">
+    <div class="search-box">
+        <span class="search-icon">🔍</span>
+        <input type="text" placeholder="Buscar en Trino" id="search-input" onkeydown="handleSearch(event)">
+    </div>
+</aside>
+
+<script>
+    const API = '';
+    let accessToken = localStorage.getItem('access_token') || '';
+    let currentUser = null;
+    let postId = null;
+
+    async function fetchWithAuth(url, options = {}) {
+        if (!accessToken) { logoutAndRedirect(); return null; }
+        options.headers = {
+            ...options.headers,
+            'Content-Type': 'application/json',
+            'Authorization': `Bearer ${accessToken}`
+        };
+        let res = await fetch(url, options);
+        if (res.status === 401) {
+            const refreshToken = localStorage.getItem('refresh_token');
+            if (refreshToken) {
+                try {
+                    const refreshRes = await fetch('/api/auth/refresh/', {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify({ refresh: refreshToken })
+                    });
+                    if (refreshRes.ok) {
+                        const data = await refreshRes.json();
+                        accessToken = data.access;
+                        localStorage.setItem('access_token', accessToken);
+                        options.headers['Authorization'] = `Bearer ${accessToken}`;
+                        res = await fetch(url, options);
+                    } else { logoutAndRedirect(); }
+                } catch (e) { logoutAndRedirect(); }
+            } else { logoutAndRedirect(); }
+        }
+        return res;
+    }
+
+    function logoutAndRedirect() {
+        localStorage.removeItem('access_token');
+        localStorage.removeItem('refresh_token');
+        window.location.href = '/accounts/login/';
+    }
+
+    async function getSessionToken() {
+        try {
+            const res = await fetch('/api/users/session-token/');
+            if (res.ok) {
+                const data = await res.json();
+                accessToken = data.access;
+                localStorage.setItem('access_token', data.access);
+                localStorage.setItem('refresh_token', data.refresh);
+                return true;
+            }
+        } catch (e) {}
+        return false;
+    }
+
+    async function loadProfile() {
+        if (!accessToken) {
+            const tokenObtained = await getSessionToken();
+            if (!tokenObtained) { window.location.href = '/accounts/login/'; return; }
+        }
+        try {
+            const res = await fetchWithAuth('/api/users/profile/');
+            if (!res || !res.ok) return;
+            currentUser = await res.json();
+            if (currentUser.avatar) {
+                document.getElementById('user-avatar').innerHTML = `<img src="${currentUser.avatar}" style="width:100%;height:100%;border-radius:50%;object-fit:cover;">`;
+            } else {
+                const initial = (currentUser.username || '?')[0].toUpperCase();
+                document.getElementById('user-avatar').textContent = initial;
+            }
+            document.getElementById('user-name').textContent = currentUser.username;
+            document.getElementById('user-handle').textContent = '@' + currentUser.username;
+        } catch (e) { console.error('Error cargando perfil:', e); }
+    }
+
+    function getPostId() {
+        const parts = window.location.pathname.split('/').filter(Boolean);
+        return parts[parts.length - 1];
+    }
+
+    async function loadPost() {
+        postId = getPostId();
+        if (!postId) {
+            document.getElementById('post-container').innerHTML = '<div class="error-state"><span class="icon">⚠️</span><h3>Publicación no encontrada</h3></div>';
+            return;
+        }
+        try {
+            const res = await fetchWithAuth(`/api/posts/posts/${postId}/`);
+            if (!res || !res.ok) throw new Error();
+            const post = await res.json();
+            renderPostDetail(post);
+            document.getElementById('comments-section').style.display = 'block';
+            loadComments();
+        } catch (e) {
+            document.getElementById('post-container').innerHTML = '<div class="error-state"><span class="icon">🐦</span><h3>Publicación no encontrada</h3><p>Esta publicación no existe o fue eliminada.</p></div>';
+        }
+    }
+
+    function renderPostDetail(post) {
+        const user = post.user || {};
+        const username = user.username || 'usuario';
+        const avatarUrl = user.avatar || null;
+        const initial = username[0].toUpperCase();
+        const content = formatContent(post.content || '');
+        const time = formatFullTime(post.created_at);
+        const imageHtml = post.image ? `<img src="${post.image}" class="post-detail-image" alt="imagen">` : '';
+        const likes = post.likes_count || 0;
+        const comments = post.comments_count || 0;
+        const avatarHtml = avatarUrl
+            ? `<img src="${avatarUrl}" style="width:46px;height:46px;border-radius:50%;object-fit:cover;" onclick="goToProfile('${username}')" style="cursor:pointer;">`
+            : `<div class="post-detail-avatar" onclick="goToProfile('${username}')" style="cursor:pointer;">${initial}</div>`;
+
+        document.title = `@${username} en Trino: "${post.content?.slice(0, 50)}..."`;
+
+        document.getElementById('post-container').innerHTML = `
+        <div class="post-detail">
+            ${avatarHtml}
+            <div class="post-detail-body">
+                <div>
+                    <span class="post-detail-author" onclick="goToProfile('${username}')" style="cursor:pointer;">${username}</span>
+                    <span class="post-detail-handle"> @${username}</span>
+                </div>
+                <div class="post-detail-content">${content}</div>
+                ${imageHtml}
+                <div class="post-detail-time">${time}</div>
+                <div class="post-detail-actions">
+                    <button class="action-btn" onclick="toggleLike(${post.id}, this)">
+                        <span>${likes > 0 ? '❤️' : '🤍'}</span> ${likes}
+                    </button>
+                    <button class="action-btn">
+                        <span>💬</span> ${comments}
+                    </button>
+                </div>
+            </div>
+        </div>`;
+    }
+
+    function formatContent(text) {
+        return text
+            .replace(/#(\w+)/g, '<span class="hashtag">#$1</span>')
+            .replace(/@(\w+)/g, '<span class="mention">@$1</span>');
+    }
+
+    function formatFullTime(dateStr) {
+        if (!dateStr) return '';
+        const d = new Date(dateStr);
+        return d.toLocaleString('es-AR', {
+            hour: '2-digit', minute: '2-digit',
+            day: 'numeric', month: 'long', year: 'numeric'
+        }).replace(',', ' ·');
+    }
+
+    function formatTime(dateStr) {
+        if (!dateStr) return '';
+        const diff = (Date.now() - new Date(dateStr)) / 1000;
+        if (diff < 60) return 'ahora';
+        if (diff < 3600) return Math.floor(diff / 60) + 'm';
+        if (diff < 86400) return Math.floor(diff / 3600) + 'h';
+        return Math.floor(diff / 86400) + 'd';
+    }
+
+    async function toggleLike(postId, btn) {
+        try {
+            const res = await fetchWithAuth(`/api/posts/${postId}/like/`, { method: 'POST' });
+            if (!res || !res.ok) return;
+            const data = await res.json();
+            btn.classList.toggle('liked', data.status === 'liked');
+            btn.innerHTML = `<span>${data.status === 'liked' ? '❤️' : '🤍'}</span> ${data.likes_count}`;
+        } catch (e) {}
+    }
+
+    async function loadComments() {
+        const list = document.getElementById('comments-list');
+        list.innerHTML = '<div class="loading">Cargando comentarios...</div>';
+        try {
+            const res = await fetchWithAuth(`/api/posts/${postId}/comments/`);
+            if (!res || !res.ok) throw new Error();
+            const data = await res.json();
+            const comments = data.results || data;
+            if (!comments || comments.length === 0) {
+                list.innerHTML = '<div class="comments-empty"><span class="icon">💬</span><p>Sin comentarios todavía. ¡Sé el primero!</p></div>';
+                return;
+            }
+            list.innerHTML = comments.map(c => renderComment(c)).join('');
+        } catch (e) {
+            list.innerHTML = '<div class="comments-empty"><span class="icon">⚠️</span><p>No se pudieron cargar los comentarios.</p></div>';
+        }
+    }
+
+    function renderComment(c) {
+        const username = typeof c.user === 'string' ? c.user : (c.user?.username || 'usuario');
+        const initial = username[0].toUpperCase();
+        const avatarUrl = typeof c.user === 'object' && c.user?.avatar ? c.user.avatar : null;
+        const time = formatTime(c.created_at);
+        const avatarHtml = avatarUrl
+            ? `<img src="${avatarUrl}" style="width:32px;height:32px;border-radius:50%;object-fit:cover;cursor:pointer;" onclick="goToProfile('${username}')">`
+            : `<div class="avatar" style="width:32px;height:32px;font-size:0.7rem;cursor:pointer;" onclick="goToProfile('${username}')">${initial}</div>`;
+        return `
+        <div class="comment-item">
+            ${avatarHtml}
+            <div class="comment-body">
+                <div class="comment-meta">
+                    <span class="comment-author" onclick="goToProfile('${username}')">${username}</span>
+                    <span class="comment-time">· ${time}</span>
+                </div>
+                <div class="comment-text">${c.content}</div>
+            </div>
+        </div>`;
+    }
+
+    async function submitComment() {
+        const input = document.getElementById('comment-input');
+        const content = input.value.trim();
+        if (!content || !postId) return;
+
+        const btn = document.getElementById('btn-comment');
+        btn.disabled = true;
+        btn.textContent = '...';
+
+        try {
+            const res = await fetchWithAuth(`/api/posts/${postId}/comments/`, {
+                method: 'POST',
+                body: JSON.stringify({ content })
+            });
+            if (!res || !res.ok) throw new Error();
+            const comment = await res.json();
+            input.value = '';
+            const list = document.getElementById('comments-list');
+            const empty = list.querySelector('.comments-empty');
+            if (empty) list.innerHTML = '';
+            list.insertAdjacentHTML('afterbegin', renderComment(comment));
+        } catch (e) {
+            alert('No se pudo enviar el comentario.');
+        } finally {
+            btn.disabled = false;
+            btn.textContent = 'Responder';
+        }
+    }
+
+    function goToProfile(username) {
+        window.location.href = '/profile/?username=' + encodeURIComponent(username);
+    }
+
+    function handleSearch(e) {
+        if (e.key === 'Enter') {
+            const q = document.getElementById('search-input').value.trim();
+            if (q) window.location.href = `/search/?q=${encodeURIComponent(q)}`;
+        }
+    }
+
+    function logout() {
+        localStorage.removeItem('access_token');
+        localStorage.removeItem('refresh_token');
+        window.location.href = '/api/users/logout/';
+    }
+
+    // ── THEME ──
+    function toggleTheme() {
+        const isLight = document.body.getAttribute('data-theme') === 'light';
+        document.body.setAttribute('data-theme', isLight ? '' : 'light');
+        localStorage.setItem('theme', isLight ? '' : 'light');
+        document.getElementById('btn-theme').textContent = isLight ? '🌙' : '☀️';
+    }
+
+    function loadTheme() {
+        const saved = localStorage.getItem('theme');
+        if (saved === 'light') {
+            document.body.setAttribute('data-theme', 'light');
+            document.getElementById('btn-theme').textContent = '☀️';
+        }
+    }
+
+    loadTheme();
+    loadProfile().then(() => loadPost());
+</script>
+
+</body>
+</html>

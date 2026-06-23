@@ -1,0 +1,789 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Trino — Buscar</title>
+    <link href="https://fonts.googleapis.com/css2?family=Syne:wght@400;600;700;800&family=DM+Sans:wght@300;400;500&display=swap" rel="stylesheet">
+    <style>
+        *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+        :root {
+            --bg: #0a0a0f;
+            --surface: #111118;
+            --surface2: #16161f;
+            --border: #1e1e2e;
+            --accent: #6c63ff;
+            --accent-glow: rgba(108, 99, 255, 0.2);
+            --text: #e8e8f0;
+            --muted: #5a5a7a;
+            --like: #ff4f6d;
+            --success: #4fffb0;
+        }
+
+        [data-theme="light"] {
+            --bg: #ffffff;
+            --surface: #f5f5f8;
+            --surface2: #e8e8f0;
+            --border: #d0d0da;
+            --accent: #6c63ff;
+            --accent-glow: rgba(108, 99, 255, 0.15);
+            --text: #0a0a0f;
+            --muted: #8a8aaa;
+            --like: #e0455e;
+            --success: #2ea87a;
+        }
+
+        body {
+            background: var(--bg);
+            color: var(--text);
+            font-family: 'DM Sans', sans-serif;
+            min-height: 100vh;
+            display: grid;
+            grid-template-columns: 260px 1fr 300px;
+            max-width: 1200px;
+            margin: 0 auto;
+        }
+
+        .sidebar-left {
+            padding: 1.5rem 1rem;
+            border-right: 1px solid var(--border);
+            position: sticky;
+            top: 0;
+            height: 100vh;
+            display: flex;
+            flex-direction: column;
+            gap: 0.25rem;
+        }
+
+        .logo {
+            font-family: 'Syne', sans-serif;
+            font-size: 1.8rem;
+            font-weight: 800;
+            color: var(--text);
+            padding: 0.75rem 1rem;
+            margin-bottom: 1rem;
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+            letter-spacing: -1px;
+            text-decoration: none;
+        }
+
+        .logo span { color: var(--accent); }
+
+        .nav-item {
+            display: flex;
+            align-items: center;
+            gap: 0.9rem;
+            padding: 0.75rem 1rem;
+            border-radius: 12px;
+            color: var(--text);
+            text-decoration: none;
+            font-size: 0.95rem;
+            font-weight: 500;
+            transition: background 0.15s, color 0.15s;
+            cursor: pointer;
+        }
+
+        .nav-item:hover { background: var(--surface2); }
+        .nav-item.active { color: var(--accent); background: rgba(108,99,255,0.08); }
+
+        .nav-icon { font-size: 1.2rem; width: 24px; text-align: center; }
+
+        .btn-post {
+            margin-top: 1rem;
+            background: var(--accent);
+            color: #fff;
+            border: none;
+            border-radius: 12px;
+            padding: 0.85rem;
+            font-family: 'Syne', sans-serif;
+            font-size: 0.95rem;
+            font-weight: 700;
+            cursor: pointer;
+            transition: opacity 0.2s, box-shadow 0.2s;
+            box-shadow: 0 4px 16px var(--accent-glow);
+            width: 100%;
+        }
+
+        .btn-post:hover { opacity: 0.9; box-shadow: 0 6px 24px rgba(108,99,255,0.35); }
+
+        .btn-logout {
+            background: none;
+            border: 1px solid rgba(255, 79, 109, 0.3);
+            border-radius: 12px;
+            padding: 0.65rem 1rem;
+            color: #ff4f6d;
+            font-family: 'DM Sans', sans-serif;
+            font-size: 0.85rem;
+            font-weight: 500;
+            cursor: pointer;
+            transition: background 0.15s, border-color 0.15s;
+            width: 100%;
+            margin-top: 0.5rem;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 0.5rem;
+        }
+
+        .btn-logout:hover { background: rgba(255, 79, 109, 0.1); border-color: #ff4f6d; }
+
+        .btn-theme {
+            background: none;
+            border: 1px solid var(--border);
+            border-radius: 12px;
+            padding: 0.65rem 1rem;
+            color: var(--text);
+            font-family: 'DM Sans', sans-serif;
+            font-size: 1rem;
+            cursor: pointer;
+            transition: background 0.15s, border-color 0.15s;
+            width: 100%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+
+        .btn-theme:hover { background: var(--surface2); border-color: var(--accent); }
+
+        .user-card {
+            margin-top: auto;
+            display: flex;
+            align-items: center;
+            gap: 0.75rem;
+            padding: 0.75rem 1rem;
+            border-radius: 12px;
+            cursor: pointer;
+            transition: background 0.15s;
+        }
+
+        .user-card:hover { background: var(--surface2); }
+
+        .avatar {
+            width: 38px; height: 38px;
+            border-radius: 50%;
+            background: linear-gradient(135deg, var(--accent), #63b3ff);
+            display: flex; align-items: center; justify-content: center;
+            font-weight: 700; font-size: 0.875rem; color: #fff;
+            flex-shrink: 0;
+        }
+
+        .user-info { flex: 1; overflow: hidden; }
+        .user-name { font-size: 0.875rem; font-weight: 600; }
+        .user-handle { font-size: 0.75rem; color: var(--muted); }
+
+        .main-content {
+            border-right: 1px solid var(--border);
+            min-height: 100vh;
+        }
+
+        .search-header {
+            position: sticky;
+            top: 0;
+            background: rgba(10,10,15,0.85);
+            backdrop-filter: blur(12px);
+            border-bottom: 1px solid var(--border);
+            padding: 1rem 1.25rem;
+            z-index: 10;
+        }
+
+        .search-header h2 {
+            font-family: 'Syne', sans-serif;
+            font-size: 1.1rem;
+            font-weight: 700;
+            margin-bottom: 0.75rem;
+        }
+
+        .search-main-input {
+            width: 100%;
+            background: var(--surface2);
+            border: 1px solid var(--border);
+            border-radius: 20px;
+            padding: 0.75rem 1rem;
+            color: var(--text);
+            font-family: 'DM Sans', sans-serif;
+            font-size: 0.95rem;
+            outline: none;
+            transition: border-color 0.2s;
+        }
+
+        .search-main-input:focus { border-color: var(--accent); }
+        .search-main-input::placeholder { color: var(--muted); }
+
+        .search-tabs {
+            display: flex;
+            border-bottom: 1px solid var(--border);
+        }
+
+        .tab {
+            flex: 1;
+            text-align: center;
+            padding: 0.85rem;
+            font-weight: 500;
+            font-size: 0.9rem;
+            color: var(--muted);
+            cursor: pointer;
+            transition: color 0.15s, border-color 0.15s;
+            border-bottom: 2px solid transparent;
+        }
+
+        .tab:hover { color: var(--text); background: rgba(108,99,255,0.04); }
+        .tab.active { color: var(--accent); border-bottom-color: var(--accent); }
+
+        .error-banner {
+            background: rgba(255,79,109,0.08);
+            border: 1px solid rgba(255,79,109,0.2);
+            border-radius: 10px;
+            padding: 0.75rem 1rem;
+            color: #ff4f6d;
+            font-size: 0.825rem;
+            margin: 1rem 1.25rem;
+            display: none;
+        }
+
+        .post {
+            padding: 1.25rem;
+            border-bottom: 1px solid var(--border);
+            display: flex;
+            gap: 0.85rem;
+            transition: background 0.15s;
+            cursor: pointer;
+        }
+
+        .post:hover { background: rgba(255,255,255,0.015); }
+
+        .post-body { flex: 1; }
+
+        .post-meta {
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+            margin-bottom: 0.3rem;
+        }
+
+        .post-author { font-weight: 600; font-size: 0.9rem; }
+        .post-handle, .post-time { font-size: 0.8rem; color: var(--muted); }
+
+        .post-content {
+            font-size: 0.95rem;
+            line-height: 1.55;
+            margin-bottom: 0.75rem;
+            color: var(--text);
+        }
+
+        .post-content .hashtag { color: var(--accent); }
+        .post-content .mention { color: #63b3ff; }
+
+        .post-image {
+            width: 100%;
+            border-radius: 12px;
+            margin-bottom: 0.75rem;
+            max-height: 280px;
+            object-fit: cover;
+            border: 1px solid var(--border);
+        }
+
+        .post-actions {
+            display: flex;
+            gap: 1.5rem;
+        }
+
+        .action-btn {
+            display: flex;
+            align-items: center;
+            gap: 0.35rem;
+            background: none;
+            border: none;
+            color: var(--muted);
+            font-size: 0.825rem;
+            cursor: pointer;
+            padding: 0.25rem 0;
+            transition: color 0.15s;
+            font-family: 'DM Sans', sans-serif;
+        }
+
+        .action-btn:hover { color: var(--accent); }
+        .action-btn span { font-size: 1rem; }
+
+        .user-result {
+            display: flex;
+            align-items: center;
+            gap: 0.85rem;
+            padding: 1rem 1.25rem;
+            border-bottom: 1px solid var(--border);
+            transition: background 0.15s;
+            cursor: pointer;
+        }
+
+        .user-result:hover { background: rgba(255,255,255,0.015); }
+
+        .user-result-info { flex: 1; }
+        .user-result-name { font-weight: 600; font-size: 0.9rem; }
+        .user-result-handle { font-size: 0.8rem; color: var(--muted); }
+        .user-result-bio { font-size: 0.85rem; color: var(--muted); margin-top: 0.2rem; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+
+        .btn-follow-small {
+            background: none;
+            border: 1px solid var(--accent);
+            border-radius: 20px;
+            padding: 0.3rem 0.85rem;
+            color: var(--accent);
+            font-size: 0.75rem;
+            font-weight: 600;
+            cursor: pointer;
+            transition: background 0.15s, color 0.15s;
+            font-family: 'DM Sans', sans-serif;
+            flex-shrink: 0;
+        }
+
+        .btn-follow-small:hover { background: var(--accent); color: #fff; }
+        .btn-follow-small.following { background: var(--accent); color: #fff; }
+
+        .hashtag-result {
+            display: flex;
+            align-items: center;
+            gap: 0.85rem;
+            padding: 1rem 1.25rem;
+            border-bottom: 1px solid var(--border);
+            transition: background 0.15s;
+            cursor: pointer;
+        }
+
+        .hashtag-result:hover { background: rgba(255,255,255,0.015); }
+
+        .hashtag-icon {
+            width: 38px; height: 38px;
+            border-radius: 50%;
+            background: var(--surface2);
+            display: flex; align-items: center; justify-content: center;
+            font-size: 1.1rem;
+            flex-shrink: 0;
+        }
+
+        .hashtag-name { font-weight: 600; font-size: 0.9rem; color: var(--accent); }
+
+        .empty-state {
+            padding: 4rem 2rem;
+            text-align: center;
+            color: var(--muted);
+        }
+
+        .empty-state .icon { font-size: 3rem; margin-bottom: 1rem; display: block; }
+        .empty-state h3 { font-family: 'Syne', sans-serif; color: var(--text); margin-bottom: 0.5rem; }
+
+        .sidebar-right {
+            padding: 1.5rem 1rem;
+        }
+
+        .widget {
+            background: var(--surface2);
+            border: 1px solid var(--border);
+            border-radius: 16px;
+            padding: 1.25rem;
+            margin-bottom: 1rem;
+        }
+
+        .widget h3 {
+            font-family: 'Syne', sans-serif;
+            font-size: 0.95rem;
+            font-weight: 700;
+            margin-bottom: 1rem;
+        }
+
+        .section-label {
+            display: none;
+            padding: 0.75rem 1.25rem;
+            font-size: 0.75rem;
+            font-weight: 600;
+            color: var(--muted);
+            text-transform: uppercase;
+            letter-spacing: 0.08em;
+            border-bottom: 1px solid var(--border);
+        }
+
+        @media (max-width: 1024px) {
+            body { grid-template-columns: 70px 1fr; }
+            .sidebar-right { display: none; }
+            .nav-item span:not(.nav-icon) { display: none; }
+            .logo span:last-child { display: none; }
+            .btn-post { padding: 0.85rem; font-size: 0; }
+            .btn-post::before { content: '✏️'; font-size: 1.1rem; }
+            .user-card .user-info { display: none; }
+        }
+
+        @media (max-width: 640px) {
+            body { grid-template-columns: 1fr; }
+            .sidebar-left { display: none; }
+        }
+    </style>
+</head>
+<body>
+
+<nav class="sidebar-left">
+    <a class="logo" href="/feed/">🐦 <span>Trino</span></a>
+
+    <a class="nav-item" href="/feed/">
+        <span class="nav-icon">🏠</span> Inicio
+    </a>
+    <a class="nav-item active" href="/search/">
+        <span class="nav-icon">🔍</span> Explorar
+    </a>
+    <a class="nav-item" href="/api/notifications/" id="nav-notifs">
+        <span class="nav-icon">🔔</span> Notificaciones
+    </a>
+    <a class="nav-item" href="/api/messages/" id="nav-messages">
+        <span class="nav-icon">✉️</span> Mensajes
+    </a>
+    <a class="nav-item" href="/profile/" id="nav-profile">
+        <span class="nav-icon">👤</span> Perfil
+    </a>
+
+    <button class="btn-logout" onclick="logout()">🚪 Cerrar sesión</button>
+
+    <button class="btn-theme" onclick="toggleTheme()" id="btn-theme" title="Cambiar tema">🌙</button>
+
+    <div class="user-card" id="user-card" onclick="window.location.href='/profile/'">
+        <div class="avatar" id="user-avatar">?</div>
+        <div class="user-info">
+            <div class="user-name" id="user-name">Cargando...</div>
+            <div class="user-handle" id="user-handle">@...</div>
+        </div>
+    </div>
+</nav>
+
+<main class="main-content">
+    <div class="search-header">
+        <h2>Buscar</h2>
+        <input type="text" class="search-main-input" id="search-main-input" placeholder="Buscá personas, trinos o hashtags..." onkeydown="handleSearch(event)" autofocus>
+    </div>
+
+    <div class="search-tabs" id="search-tabs" style="display:none;">
+        <div class="tab active" data-tab="posts">Trinos</div>
+        <div class="tab" data-tab="users">Personas</div>
+        <div class="tab" data-tab="hashtags">Hashtags</div>
+    </div>
+
+    <div class="error-banner" id="error-banner"></div>
+
+    <div id="results-container">
+        <div class="empty-state">
+            <span class="icon">🔍</span>
+            <h3>Buscá en Trino</h3>
+            <p>Encontrá personas, trinos y hashtags.</p>
+        </div>
+    </div>
+</main>
+
+<aside class="sidebar-right">
+</aside>
+
+<script>
+    const API = '';
+    let accessToken = localStorage.getItem('access_token') || '';
+    let currentUser = null;
+
+    async function fetchWithAuth(url, options = {}) {
+        if (!accessToken) { logoutAndRedirect(); return null; }
+
+        options.headers = {
+            ...options.headers,
+            'Content-Type': 'application/json',
+            'Authorization': `Bearer ${accessToken}`
+        };
+
+        let res = await fetch(url, options);
+
+        if (res.status === 401) {
+            const refreshToken = localStorage.getItem('refresh_token');
+            if (refreshToken) {
+                try {
+                    const refreshRes = await fetch('/api/auth/refresh/', {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify({ refresh: refreshToken })
+                    });
+                    if (refreshRes.ok) {
+                        const data = await refreshRes.json();
+                        accessToken = data.access;
+                        localStorage.setItem('access_token', accessToken);
+                        options.headers['Authorization'] = `Bearer ${accessToken}`;
+                        res = await fetch(url, options);
+                    } else {
+                        logoutAndRedirect();
+                    }
+                } catch (e) {
+                    logoutAndRedirect();
+                }
+            } else {
+                logoutAndRedirect();
+            }
+        }
+        return res;
+    }
+
+    function logoutAndRedirect() {
+        localStorage.removeItem('access_token');
+        localStorage.removeItem('refresh_token');
+        window.location.href = '/accounts/login/';
+    }
+
+    async function getSessionToken() {
+        try {
+            const res = await fetch('/api/users/session-token/');
+            if (res.ok) {
+                const data = await res.json();
+                accessToken = data.access;
+                localStorage.setItem('access_token', data.access);
+                localStorage.setItem('refresh_token', data.refresh);
+                return true;
+            }
+        } catch (e) {}
+        return false;
+    }
+
+    async function loadProfile() {
+        if (!accessToken) {
+            const tokenObtained = await getSessionToken();
+            if (!tokenObtained) {
+                window.location.href = '/accounts/login/';
+                return;
+            }
+        }
+        try {
+            const res = await fetchWithAuth('/api/users/profile/');
+            if (!res || !res.ok) return;
+            currentUser = await res.json();
+            if (currentUser.avatar) {
+                document.getElementById('user-avatar').innerHTML = `<img src="${currentUser.avatar}" style="width:100%;height:100%;border-radius:50%;object-fit:cover;">`;
+            } else {
+                const initial = (currentUser.username || '?')[0].toUpperCase();
+                document.getElementById('user-avatar').textContent = initial;
+            }
+            document.getElementById('user-name').textContent = currentUser.username;
+            document.getElementById('user-handle').textContent = '@' + currentUser.username;
+        } catch (e) { console.error('Error cargando perfil:', e); }
+    }
+
+    let activeTab = 'posts';
+
+    document.querySelectorAll('.tab').forEach(tab => {
+        tab.addEventListener('click', function() {
+            document.querySelectorAll('.tab').forEach(t => t.classList.remove('active'));
+            this.classList.add('active');
+            activeTab = this.dataset.tab;
+            filterResults();
+        });
+    });
+
+    function handleSearch(e) {
+        if (e.key === 'Enter') {
+            const q = document.getElementById('search-main-input').value.trim();
+            if (q) {
+                window.history.pushState({}, '', '/search/?q=' + encodeURIComponent(q));
+                doSearch(q);
+            }
+        }
+    }
+
+    let allResults = { posts: [], users: [], hashtags: [] };
+
+    async function doSearch(q) {
+        try {
+            const res = await fetchWithAuth('/api/search/?q=' + encodeURIComponent(q));
+            if (!res || !res.ok) throw new Error('Error en la búsqueda');
+            allResults = await res.json();
+            document.getElementById('search-tabs').style.display = 'flex';
+            filterResults();
+        } catch (e) {
+            showError('No se pudieron obtener resultados.');
+        }
+    }
+
+    function filterResults() {
+        const container = document.getElementById('results-container');
+        const data = allResults[activeTab] || [];
+
+        if (!data || data.length === 0) {
+            container.innerHTML = `
+                <div class="empty-state">
+                    <span class="icon">🔍</span>
+                    <h3>Sin resultados</h3>
+                    <p>No encontramos nada para esta búsqueda.</p>
+                </div>`;
+            return;
+        }
+
+        if (activeTab === 'posts') {
+            container.innerHTML = data.map(post => renderPost(post)).join('');
+        } else if (activeTab === 'users') {
+            container.innerHTML = data.map(user => renderUser(user)).join('');
+        } else if (activeTab === 'hashtags') {
+            container.innerHTML = data.map(tag => renderHashtag(tag)).join('');
+        }
+    }
+
+    function renderPost(post) {
+        const author = post.author || post.user || {};
+        const username = typeof author === 'string' ? author : (author.username || 'usuario');
+        const displayName = typeof author === 'string' ? author : username;
+        const avatarUrl = typeof author === 'object' ? (author.avatar || null) : null;
+        const initial = (typeof author === 'string' ? author : username)[0].toUpperCase();
+        const content = formatContent(post.content || '');
+        const time = formatTime(post.created_at);
+        const imageHtml = post.image ? `<img src="${post.image}" class="post-image" alt="imagen">` : '';
+        const avatarHtml = avatarUrl
+            ? `<img src="${avatarUrl}" style="width:38px;height:38px;border-radius:50%;object-fit:cover;">`
+            : `<div class="avatar">${initial}</div>`;
+
+        return `
+        <div class="post" data-id="${post.id}" onclick="goToPost(${post.id})">
+            ${avatarHtml}
+            <div class="post-body">
+                <div class="post-meta">
+                    <span class="post-author">${displayName}</span>
+                    <span class="post-handle">@${displayName}</span>
+                    <span class="post-handle">·</span>
+                    <span class="post-time">${time}</span>
+                </div>
+                <div class="post-content">${content}</div>
+                ${imageHtml}
+                <div class="post-actions" onclick="event.stopPropagation()">
+                    <button class="action-btn" onclick="toggleLike(${post.id}, this)">
+                        <span>🤍</span>
+                    </button>
+                    <button class="action-btn" onclick="viewComments(${post.id})">
+                        <span>💬</span>
+                    </button>
+                </div>
+            </div>
+        </div>`;
+    }
+
+    function renderUser(user) {
+        const initial = (user.username || '?')[0].toUpperCase();
+        const avatarHtml = user.avatar
+            ? `<img src="${user.avatar}" style="width:38px;height:38px;border-radius:50%;object-fit:cover;">`
+            : `<div class="avatar">${initial}</div>`;
+        return `
+        <div class="user-result" onclick="goToProfile('${user.username}')">
+            ${avatarHtml}
+            <div class="user-result-info">
+                <div class="user-result-name">${user.username}</div>
+                <div class="user-result-handle">@${user.username}</div>
+                ${user.bio ? '<div class="user-result-bio">' + user.bio + '</div>' : ''}
+            </div>
+            ${currentUser && currentUser.username !== user.username ? `
+                <button class="btn-follow-small" onclick="event.stopPropagation(); followUser('${user.username}', this)">
+                    Seguir
+                </button>
+            ` : ''}
+        </div>`;
+    }
+
+    function renderHashtag(tag) {
+        const name = tag.startsWith('#') ? tag : '#' + tag;
+        return `
+        <div class="hashtag-result" onclick="searchHashtag('${name}')">
+            <div class="hashtag-icon">＃</div>
+            <div class="hashtag-name">${name}</div>
+        </div>`;
+    }
+
+    function formatContent(text) {
+        return text
+            .replace(/#(\w+)/g, '<span class="hashtag">#$1</span>')
+            .replace(/@(\w+)/g, '<span class="mention">@$1</span>');
+    }
+
+    function formatTime(dateStr) {
+        if (!dateStr) return '';
+        const diff = (Date.now() - new Date(dateStr)) / 1000;
+        if (diff < 60) return 'ahora';
+        if (diff < 3600) return Math.floor(diff / 60) + 'm';
+        if (diff < 86400) return Math.floor(diff / 3600) + 'h';
+        return Math.floor(diff / 86400) + 'd';
+    }
+
+    function goToProfile(username) {
+        window.location.href = '/profile/?username=' + encodeURIComponent(username);
+    }
+
+    function searchHashtag(tag) {
+        const q = tag.replace('#', '');
+        document.getElementById('search-main-input').value = q;
+        window.history.pushState({}, '', '/search/?q=' + encodeURIComponent(q));
+        doSearch(q);
+    }
+
+    async function toggleLike(postId, btn) {
+        try {
+            const res = await fetchWithAuth(`/api/posts/${postId}/like/`, { method: 'POST' });
+            if (!res || !res.ok) return;
+            const data = await res.json();
+            btn.classList.toggle('liked', data.status === 'liked');
+            btn.innerHTML = `<span>${data.status === 'liked' ? '❤️' : '🤍'}</span>`;
+        } catch (e) {}
+    }
+
+    async function followUser(username, btn) {
+        try {
+            const res = await fetchWithAuth('/api/users/follow/' + username + '/', { method: 'POST' });
+            if (!res || !res.ok) throw new Error();
+            const data = await res.json();
+            btn.textContent = data.status === 'siguiendo' ? 'Siguiendo' : 'Seguir';
+            btn.classList.toggle('following', data.status === 'siguiendo');
+        } catch (e) { console.error('Error en follow:', e); }
+    }
+
+    function showError(msg) {
+        const banner = document.getElementById('error-banner');
+        banner.textContent = '⚠ ' + msg;
+        banner.style.display = 'block';
+        setTimeout(() => banner.style.display = 'none', 4000);
+    }
+
+    function viewComments(postId) {
+        console.log('Ver comentarios del post', postId);
+    }
+
+    function goToPost(postId) {
+        window.location.href = '/post/' + postId + '/';
+    }
+
+    function logout() {
+        localStorage.removeItem('access_token');
+        localStorage.removeItem('refresh_token');
+        window.location.href = '/api/users/logout/';
+    }
+
+    const params = new URLSearchParams(window.location.search);
+    const initialQuery = params.get('q');
+    if (initialQuery) {
+        document.getElementById('search-main-input').value = initialQuery;
+        doSearch(initialQuery);
+    }
+
+    // ── THEME ──
+    function toggleTheme() {
+        const isLight = document.body.getAttribute('data-theme') === 'light';
+        document.body.setAttribute('data-theme', isLight ? '' : 'light');
+        localStorage.setItem('theme', isLight ? '' : 'light');
+        document.getElementById('btn-theme').textContent = isLight ? '🌙' : '☀️';
+    }
+
+    function loadTheme() {
+        const saved = localStorage.getItem('theme');
+        if (saved === 'light') {
+            document.body.setAttribute('data-theme', 'light');
+            document.getElementById('btn-theme').textContent = '☀️';
+        }
+    }
+
+    loadTheme();
+    loadProfile();
+</script>
+
+</body>
+</html>
