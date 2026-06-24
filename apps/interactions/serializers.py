@@ -1,5 +1,14 @@
 from rest_framework import serializers
+from django.contrib.auth import get_user_model
 from .models import Like, Comment, Message, Notification
+
+User = get_user_model()
+
+
+class UserBasicSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = User
+        fields = ['id', 'username', 'avatar']
 
 
 class LikeSerializer(serializers.ModelSerializer):
@@ -22,16 +31,22 @@ class CommentSerializer(serializers.ModelSerializer):
 
 
 class MessageSerializer(serializers.ModelSerializer):
-    sender = serializers.StringRelatedField(read_only=True)
+    sender = UserBasicSerializer(read_only=True)
+    receiver = serializers.PrimaryKeyRelatedField(
+        queryset=User.objects.all(),
+        write_only=True,
+        required=False
+    )
+    receiver_info = UserBasicSerializer(source='receiver', read_only=True)
 
     class Meta:
         model = Message
-        fields = ['id', 'sender', 'receiver', 'content', 'read', 'created_at']
-        read_only_fields = ['id', 'sender', 'read', 'created_at']
+        fields = ['id', 'sender', 'receiver', 'receiver_info', 'content', 'read', 'created_at']
+        read_only_fields = ['id', 'sender', 'receiver_info', 'read', 'created_at']
 
 
 class NotificationSerializer(serializers.ModelSerializer):
-    actor = serializers.StringRelatedField(read_only=True)
+    actor = UserBasicSerializer(read_only=True)
 
     class Meta:
         model = Notification

@@ -41,12 +41,24 @@ class MessageListCreateView(generics.ListCreateAPIView):
     permission_classes = [permissions.IsAuthenticated]
 
     def get_queryset(self):
-        return Message.objects.filter(
-            receiver=self.request.user
-        ).order_by('-created_at')
+        user = self.request.user
+        sent = Message.objects.filter(sender=user)
+        received = Message.objects.filter(receiver=user)
+        return (sent | received).order_by('-created_at')
 
     def perform_create(self, serializer):
-        serializer.save(sender=self.request.user)
+        from django.contrib.auth import get_user_model
+        User = get_user_model()
+        username = self.request.data.get('receiver_username')
+        if username:
+            try:
+                receiver = User.objects.get(username=username)
+            except User.DoesNotExist:
+                from rest_framework.exceptions import NotFound
+                raise NotFound('Usuario no encontrado.')
+            serializer.save(sender=self.request.user, receiver=receiver)
+        else:
+            serializer.save(sender=self.request.user)
 
 
 class NotificationListView(generics.ListAPIView):

@@ -3,9 +3,9 @@ from rest_framework.response import Response
 from rest_framework.decorators import api_view, permission_classes
 from rest_framework_simplejwt.tokens import RefreshToken
 from django.contrib.auth import logout as django_logout
-from django.shortcuts import redirect
+from django.shortcuts import redirect, get_object_or_404
 from .models import User
-from .serializers import RegisterSerializer, UserProfileSerializer
+from .serializers import RegisterSerializer, UserProfileSerializer, PublicUserSerializer
 
 class RegisterView(generics.CreateAPIView):
     queryset = User.objects.all()
@@ -38,6 +38,26 @@ def follow_user(request, username):
     else:
         request.user.following.add(target)
         return Response({'status': 'siguiendo'})
+
+
+class FollowersList(generics.ListAPIView):
+    serializer_class = PublicUserSerializer
+    permission_classes = [permissions.IsAuthenticated]
+
+    def get_queryset(self):
+        username = self.kwargs['username']
+        user = get_object_or_404(User, username=username)
+        return user.followers.all()
+
+
+class FollowingList(generics.ListAPIView):
+    serializer_class = PublicUserSerializer
+    permission_classes = [permissions.IsAuthenticated]
+
+    def get_queryset(self):
+        username = self.kwargs['username']
+        user = get_object_or_404(User, username=username)
+        return user.following.all()
 
 
 @api_view(['GET'])

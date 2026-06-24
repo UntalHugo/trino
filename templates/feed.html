@@ -343,6 +343,7 @@
         .action-btn.liked { color: var(--like); }
         .action-btn.liked:hover { color: var(--like); }
         .action-btn span { font-size: 1rem; }
+        .action-delete:hover { color: var(--like) !important; }
 
         /* Loading skeleton */
         .skeleton-post {
@@ -641,29 +642,29 @@
     <a class="nav-item" href="/search/" id="nav-explore">
         <span class="nav-icon">🔍</span> Explorar
     </a>
-    <a class="nav-item" href="/api/notifications/" id="nav-notifs">
+    <a class="nav-item" href="/notifications/" id="nav-notifs">
         <span class="nav-icon">🔔</span> Notificaciones
     </a>
-    <a class="nav-item" href="/api/messages/" id="nav-messages">
+    <a class="nav-item" href="/messages/" id="nav-messages">
         <span class="nav-icon">✉️</span> Mensajes
     </a>
     <a class="nav-item" href="/profile/" id="nav-profile">
         <span class="nav-icon">👤</span> Perfil
     </a>
 
-    <button class="btn-post" onclick="document.getElementById('post-input').focus()">
+    <button class="btn-post" id="btn-post">
         Trinar
     </button>
 
-    <button class="btn-logout" onclick="logout()">
+    <button class="btn-logout" id="btn-logout">
         🚪 Cerrar sesión
     </button>
 
-    <button class="btn-theme" onclick="toggleTheme()" id="btn-theme" title="Cambiar tema">
+    <button class="btn-theme" id="btn-theme" title="Cambiar tema">
         🌙
     </button>
 
-    <div class="user-card" id="user-card" onclick="window.location.href='/profile/'">
+    <div class="user-card" id="user-card">
         <div class="avatar" id="user-avatar">?</div>
         <div class="user-info">
             <div class="user-name" id="user-name">Cargando...</div>
@@ -691,13 +692,13 @@
                 </div>
                 <div style="display:flex;align-items:center;">
                     <span class="char-count" id="char-count">280</span>
-                    <button class="btn-trinar" id="btn-trinar" onclick="createPost()">Trinar</button>
+                    <button class="btn-trinar" id="btn-trinar">Trinar</button>
                 </div>
             </div>
-            <input type="file" id="image-input" accept="image/*" style="display:none" onchange="previewImage(event)">
+            <input type="file" id="image-input" accept="image/*" style="display:none">
             <div id="image-preview" style="display:none;position:relative;margin-top:0.5rem;">
                 <img id="image-preview-img" style="max-height:200px;border-radius:12px;border:1px solid var(--border);width:100%;object-fit:cover;">
-                <button onclick="clearImage()" style="position:absolute;top:8px;right:8px;background:rgba(0,0,0,0.7);border:none;border-radius:50%;width:28px;height:28px;color:#fff;cursor:pointer;font-size:0.9rem;">✕</button>
+                <button id="btn-clear-image" style="position:absolute;top:8px;right:8px;background:rgba(0,0,0,0.7);border:none;border-radius:50%;width:28px;height:28px;color:#fff;cursor:pointer;font-size:0.9rem;">✕</button>
             </div>
         </div>
     </div>
@@ -737,7 +738,7 @@
 <aside class="sidebar-right">
     <div class="search-box">
         <span class="search-icon">🔍</span>
-        <input type="text" placeholder="Buscar en Trino" id="search-input" onkeydown="handleSearch(event)">
+        <input type="text" placeholder="Buscar en Trino" id="search-input">
     </div>
 
     <div class="widget">
@@ -747,18 +748,18 @@
 </aside>
 
 <!-- COMMENTS MODAL -->
-<div class="modal-overlay" id="comments-modal" onclick="closeComments(event)">
-    <div class="modal" onclick="event.stopPropagation()">
+<div class="modal-overlay" id="comments-modal">
+    <div class="modal" id="comments-modal-inner">
         <div class="modal-header">
             <h3>Comentarios</h3>
-            <button class="modal-close" onclick="closeComments()">✕</button>
+            <button class="modal-close" id="modal-close-btn">✕</button>
         </div>
         <div class="comments-list" id="comments-list">
             <div class="comment-loading">Cargando comentarios...</div>
         </div>
         <div class="modal-composer">
-            <input type="text" id="comment-input" placeholder="Escribí un comentario..." maxlength="280" onkeydown="if(event.key==='Enter'){submitComment()}">
-            <button class="btn-comment" id="btn-comment" onclick="submitComment()">Responder</button>
+            <input type="text" id="comment-input" placeholder="Escribí un comentario..." maxlength="280">
+            <button class="btn-comment" id="btn-comment">Responder</button>
         </div>
     </div>
 </div>
@@ -940,6 +941,7 @@
         const avatarHtml = avatarUrl
             ? `<img src="${avatarUrl}" style="width:38px;height:38px;border-radius:50%;object-fit:cover;">`
             : `<div class="avatar">${initial}</div>`;
+        const isOwner = currentUser && (currentUser.id === author.id);
 
         return `
         <div class="post" data-id="${post.id}" onclick="goToPost(${post.id})">
@@ -960,6 +962,7 @@
                     <button class="action-btn" onclick="viewComments(${post.id})">
                         <span>💬</span> ${comments}
                     </button>
+                    ${isOwner ? `<button class="action-btn action-delete" onclick="deletePost(${post.id}, this)"><span>🗑️</span></button>` : ''}
                 </div>
             </div>
         </div>`;
@@ -1054,6 +1057,22 @@
         } catch (e) { console.error('Error en like:', e); }
     }
 
+    // ── DELETE ──
+    async function deletePost(postId, btn) {
+        if (!confirm('¿Eliminar esta publicación?')) return;
+        const postEl = btn.closest('.post');
+        if (postEl) postEl.style.opacity = '0.4';
+        try {
+            const res = await fetchWithAuth(`/api/posts/posts/${postId}/`, { method: 'DELETE' });
+            if (!res || !res.ok) throw new Error();
+            if (postEl) postEl.remove();
+        } catch (e) {
+            console.error('Error al eliminar:', e);
+            if (postEl) postEl.style.opacity = '1';
+            alert('No se pudo eliminar la publicación.');
+        }
+    }
+
     // ── FOLLOW ──
     async function followUser(username, btn) {
         try {
@@ -1072,8 +1091,9 @@
             if (!res || !res.ok) return;
             const users = await res.json();
             const container = document.getElementById('suggestions-container');
+            if (!container) return;
             if (!users || users.length === 0) {
-                container.innerHTML = '<div style="padding:8px;color:var(--text-secondary);font-size:0.85rem;">No hay sugerencias</div>';
+                container.innerHTML = '<div style="padding:8px;color:var(--muted);font-size:0.85rem;">No hay sugerencias</div>';
                 return;
             }
             container.innerHTML = users.map(u => {
@@ -1246,6 +1266,38 @@
 
     // ── INIT ──
     document.getElementById('post-input').addEventListener('input', updateCharCount);
+    document.getElementById('btn-logout').addEventListener('click', logout);
+    document.getElementById('btn-theme').addEventListener('click', toggleTheme);
+    document.getElementById('user-card').addEventListener('click', function() { window.location.href = '/profile/'; });
+    document.getElementById('btn-post').addEventListener('click', function() { document.getElementById('post-input').focus(); });
+    document.querySelector('.btn-trinar').addEventListener('click', createPost);
+    document.getElementById('image-input').addEventListener('change', previewImage);
+    document.querySelectorAll('.tool-btn').forEach(function(btn) {
+        btn.addEventListener('click', function() {
+            var char = this.textContent.trim();
+            if (char === '🖼️') { document.getElementById('image-input').click(); }
+            else if (char === '＃') { insertTag('#'); }
+            else if (char === '@') { insertTag('@'); }
+        });
+    });
+    document.getElementById('comment-input').addEventListener('keydown', function(e) {
+        if (e.key === 'Enter') submitComment();
+    });
+    document.getElementById('btn-comment').addEventListener('click', submitComment);
+    document.getElementById('comments-modal').addEventListener('click', function(e) {
+        if (e.target === this) closeComments(e);
+    });
+    document.getElementById('comments-modal-inner').addEventListener('click', function(e) {
+        e.stopPropagation();
+    });
+    document.getElementById('modal-close-btn').addEventListener('click', closeComments);
+    document.getElementById('search-input').addEventListener('keydown', function(e) {
+        if (e.key === 'Enter') {
+            var q = this.value.trim();
+            if (q) window.location.href = '/search/?q=' + encodeURIComponent(q);
+        }
+    });
+    document.getElementById('btn-clear-image').addEventListener('click', clearImage);
 
     loadTheme();
     loadProfile().then(() => { loadFeed(); loadSuggestions(); });
