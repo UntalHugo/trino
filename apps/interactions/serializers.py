@@ -4,14 +4,16 @@ from .models import Like, Comment, Message, Notification
 
 User = get_user_model()
 
-
 class UserBasicSerializer(serializers.ModelSerializer):
     class Meta:
         model = User
-        fields = ['id', 'username', 'avatar']
+        # ─── CAMBIO AQUÍ: Agregamos 'first_name' para que viaje en los posts, comentarios, etc. ───
+        fields = ['id', 'username', 'first_name', 'avatar']
 
 
 class LikeSerializer(serializers.ModelSerializer):
+    # Si preferís que el like use el serializer completo en vez de un string plano:
+    # user = UserBasicSerializer(read_only=True)
     user = serializers.StringRelatedField(read_only=True)
 
     class Meta:
@@ -21,7 +23,8 @@ class LikeSerializer(serializers.ModelSerializer):
 
 
 class CommentSerializer(serializers.ModelSerializer):
-    user = serializers.StringRelatedField(read_only=True)
+    # Cambiamos StringRelatedField por UserBasicSerializer para que en los comentarios también salga el apodo
+    user = UserBasicSerializer(read_only=True)
     post = serializers.PrimaryKeyRelatedField(read_only=True)
 
     class Meta:

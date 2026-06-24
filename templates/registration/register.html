@@ -111,6 +111,7 @@ async function register() {
       successBox.textContent = '¡Cuenta creada! Iniciando sesión...';
       successBox.style.display = 'block';
 
+      // 1. Intentamos el login automático contra tu endpoint de Simple JWT
       const loginRes = await fetch('/api/auth/login/', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
@@ -118,8 +119,16 @@ async function register() {
       });
 
       if (loginRes.ok) {
+        const loginData = await loginRes.json();
+        
+        // 2. Guardamos los tokens en la máquina local para que persista la sesión
+        localStorage.setItem('access_token', loginData.access);
+        localStorage.setItem('refresh_token', loginData.refresh);
+
+        // 3. Mandamos directo al feed con la sesión activa
         window.location.href = '/feed/';
       } else {
+        // Si el registro anduvo pero falló el login automático, mandamos a loguear a mano
         window.location.href = '/accounts/login/';
       }
     } else {

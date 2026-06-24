@@ -51,7 +51,8 @@ class UserProfileSerializer(serializers.ModelSerializer):
 
     class Meta:
         model = User
-        fields = ['id', 'username', 'email', 'bio', 'avatar',
+        # Añadimos 'first_name' aquí. No lo metas en read_only_fields para que permita el PATCH/PUT
+        fields = ['id', 'username', 'first_name', 'email', 'bio', 'avatar',
                   'followers_count', 'following_count']
         read_only_fields = ['id', 'username']
 
