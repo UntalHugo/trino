@@ -617,7 +617,7 @@
                 const initial = (currentUser.username || '?')[0].toUpperCase();
                 document.getElementById('user-avatar').textContent = initial;
             }
-            document.getElementById('user-name').textContent = currentUser.username;
+            document.getElementById('user-name').textContent = currentUser.first_name || currentUser.username;
             document.getElementById('user-handle').textContent = '@' + currentUser.username;
         } catch (e) { console.error('Error cargando perfil:', e); }
     }
@@ -683,7 +683,7 @@
     function renderPost(post) {
         const author = post.author || post.user || {};
         const username = typeof author === 'string' ? author : (author.username || 'usuario');
-        const displayName = typeof author === 'string' ? author : username;
+        const displayName = typeof author === 'string' ? author : (author.first_name || username);
         const avatarUrl = typeof author === 'object' ? (author.avatar || null) : null;
         const initial = (typeof author === 'string' ? author : username)[0].toUpperCase();
         const content = formatContent(post.content || '');
@@ -699,7 +699,7 @@
             <div class="post-body">
                 <div class="post-meta">
                     <span class="post-author">${displayName}</span>
-                    <span class="post-handle">@${displayName}</span>
+                    <span class="post-handle">@${username}</span>
                     <span class="post-handle">·</span>
                     <span class="post-time">${time}</span>
                 </div>
@@ -726,7 +726,7 @@
         <div class="user-result" onclick="goToProfile('${user.username}')">
             ${avatarHtml}
             <div class="user-result-info">
-                <div class="user-result-name">${user.username}</div>
+                <div class="user-result-name">${user.first_name || user.username}</div>
                 <div class="user-result-handle">@${user.username}</div>
                 ${user.bio ? '<div class="user-result-bio">' + user.bio + '</div>' : ''}
             </div>

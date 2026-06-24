@@ -628,6 +628,14 @@
             body { grid-template-columns: 1fr; }
             .sidebar-left { display: none; }
         }
+        /* Asegura que las imágenes de los posts nunca se salgan de su contenedor */
+        .post-image, .trino-image, .feed img {
+            max-width: 100%;
+            height: auto;
+            object-fit: cover;
+            border-radius: 12px; /* Para que quede lindo con los bordes redondeados */
+            display: block;
+}
     </style>
 </head>
 <body>
@@ -870,7 +878,7 @@
         return false;
     }
 
-    async function loadProfile() {
+   async function loadProfile() {
         if (!accessToken) {
             const tokenObtained = await getSessionToken();
             if (!tokenObtained) {
@@ -890,7 +898,11 @@
                 document.getElementById('user-avatar').textContent = initial;
                 document.getElementById('composer-avatar').textContent = initial;
             }
-            document.getElementById('user-name').textContent = currentUser.username;
+            
+            // ─── CAMBIO AQUÍ: Priorizamos first_name para el nombre visible ───
+            const displayName = currentUser.first_name ? currentUser.first_name : currentUser.username;
+            document.getElementById('user-name').textContent = displayName;
+            
             document.getElementById('user-handle').textContent = '@' + currentUser.username;
         } catch (e) { console.error('Error cargando perfil:', e); }
     }
@@ -931,6 +943,7 @@
     function renderPost(post) {
         const author = post.author || post.user || {};
         const username = author.username || 'usuario';
+        const displayName = author.first_name || username;
         const avatarUrl = author.avatar || null;
         const initial = username[0].toUpperCase();
         const content = formatContent(post.content || '');
@@ -948,7 +961,7 @@
             ${avatarHtml}
             <div class="post-body">
                 <div class="post-meta">
-                    <span class="post-author">${username}</span>
+                    <span class="post-author">${displayName}</span>
                     <span class="post-handle">@${username}</span>
                     <span class="post-handle">·</span>
                     <span class="post-time">${time}</span>
@@ -1104,7 +1117,7 @@
                 return '<div class="suggest-user">'
                     + avatarHtml
                     + '<div class="suggest-info">'
-                    + '<div class="suggest-name">' + u.username + '</div>'
+                    + '<div class="suggest-name">' + (u.first_name || u.username) + '</div>'
                     + '<div class="suggest-handle">@' + u.username + '</div>'
                     + '</div>'
                     + '<button class="btn-follow-small" onclick="followUser(\'' + u.username + '\', this)">Seguir</button>'

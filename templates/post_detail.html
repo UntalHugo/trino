@@ -439,6 +439,11 @@
         .compose-modal-input-wrap textarea::placeholder { color: var(--muted); }
         .compose-modal-actions { display: flex; align-items: center; justify-content: space-between; padding-top: 0.75rem; border-top: 1px solid var(--border); margin-top: 0.5rem; }
         .compose-modal-tools { display: flex; gap: 0.5rem; }
+        .tool-btn { background: none; border: none; cursor: pointer; font-size: 1.1rem; padding: 0.25rem; border-radius: 6px; transition: background 0.15s; }
+        .tool-btn:hover { background: var(--surface2); }
+        .char-count { font-size: 0.8rem; color: var(--muted); margin-right: 0.75rem; }
+        .btn-trinar { background: var(--accent); color: #fff; border: none; border-radius: 20px; padding: 0.4rem 1.25rem; font-family: 'Syne', sans-serif; font-size: 0.85rem; font-weight: 700; cursor: pointer; transition: opacity 0.2s; }
+        .btn-trinar:hover { opacity: 0.9; }
 
         .btn-post {
             margin-top: 1rem;
@@ -534,12 +539,10 @@
         <input type="text" placeholder="Buscar en Trino" id="search-input">
     </div>
     <div class="widget">
-        <h3>A quién seguir</h3>
         <div id="suggestions-container"></div>
     </div>
 </aside>
 
-<!-- COMPOSE MODAL -->
 <div class="compose-modal-overlay" id="compose-modal">
     <div class="compose-modal">
         <div class="compose-modal-header">
@@ -640,11 +643,13 @@
             currentUser = await res.json();
             if (currentUser.avatar) {
                 document.getElementById('user-avatar').innerHTML = `<img src="${currentUser.avatar}" style="width:100%;height:100%;border-radius:50%;object-fit:cover;">`;
+                document.getElementById('compose-modal-avatar').innerHTML = `<img src="${currentUser.avatar}" style="width:100%;height:100%;border-radius:50%;object-fit:cover;">`;
             } else {
                 const initial = (currentUser.username || '?')[0].toUpperCase();
                 document.getElementById('user-avatar').textContent = initial;
+                document.getElementById('compose-modal-avatar').textContent = initial;
             }
-            document.getElementById('user-name').textContent = currentUser.username;
+            document.getElementById('user-name').textContent = currentUser.first_name || currentUser.username;
             document.getElementById('user-handle').textContent = '@' + currentUser.username;
         } catch (e) { console.error('Error cargando perfil:', e); }
     }
@@ -675,6 +680,7 @@
     function renderPostDetail(post) {
         const user = post.user || {};
         const username = user.username || 'usuario';
+        const displayName = user.first_name || username;
         const avatarUrl = user.avatar || null;
         const initial = username[0].toUpperCase();
         const content = formatContent(post.content || '');
@@ -683,7 +689,7 @@
         const likes = post.likes_count || 0;
         const comments = post.comments_count || 0;
         const avatarHtml = avatarUrl
-            ? `<img src="${avatarUrl}" style="width:46px;height:46px;border-radius:50%;object-fit:cover;" onclick="goToProfile('${username}')" style="cursor:pointer;">`
+            ? `<img src="${avatarUrl}" style="width:46px;height:46px;border-radius:50%;object-fit:cover;cursor:pointer;" onclick="goToProfile('${username}')">`
             : `<div class="post-detail-avatar" onclick="goToProfile('${username}')" style="cursor:pointer;">${initial}</div>`;
         const isOwner = currentUser && (currentUser.id === user.id);
 
@@ -694,7 +700,7 @@
             ${avatarHtml}
             <div class="post-detail-body">
                 <div>
-                    <span class="post-detail-author" onclick="goToProfile('${username}')" style="cursor:pointer;">${username}</span>
+                    <span class="post-detail-author" onclick="goToProfile('${username}')" style="cursor:pointer;">${displayName}</span>
                     <span class="post-detail-handle"> @${username}</span>
                 </div>
                 <div class="post-detail-content">${content}</div>
@@ -702,7 +708,7 @@
                 <div class="post-detail-time">${time}</div>
                 <div class="post-detail-actions">
                     <button class="action-btn" onclick="toggleLike(${post.id}, this)">
-                        <span>${likes > 0 ? '❤️' : '🤍'}</span> ${likes}
+                        <span>${likes > 0 ? '❤️' : '🤍'}</span> <span class="likes-count">${likes}</span>
                     </button>
                     <button class="action-btn">
                         <span>💬</span> ${comments}
@@ -742,8 +748,17 @@
             const res = await fetchWithAuth(`/api/posts/${postId}/like/`, { method: 'POST' });
             if (!res || !res.ok) return;
             const data = await res.json();
-            btn.classList.toggle('liked', data.status === 'liked');
-            btn.innerHTML = `<span>${data.status === 'liked' ? '❤️' : '🤍'}</span> ${data.likes_count}`;
+            const spanIcon = btn.querySelector('span:first-child');
+            const spanCount = btn.querySelector('.likes-count');
+            
+            if (data.status === 'liked') {
+                btn.classList.add('liked');
+                spanIcon.textContent = '❤️';
+            } else {
+                btn.classList.remove('liked');
+                spanIcon.textContent = '🤍';
+            }
+            spanCount.textContent = data.likes_count;
         } catch (e) {}
     }
 
@@ -785,12 +800,13 @@
         const avatarHtml = avatarUrl
             ? `<img src="${avatarUrl}" style="width:32px;height:32px;border-radius:50%;object-fit:cover;cursor:pointer;" onclick="goToProfile('${username}')">`
             : `<div class="avatar" style="width:32px;height:32px;font-size:0.7rem;cursor:pointer;" onclick="goToProfile('${username}')">${initial}</div>`;
+        const displayName = typeof c.user === 'object' ? (c.user?.first_name || username) : username;
         return `
         <div class="comment-item">
             ${avatarHtml}
             <div class="comment-body">
                 <div class="comment-meta">
-                    <span class="comment-author" onclick="goToProfile('${username}')">${username}</span>
+                    <span class="comment-author" onclick="goToProfile('${username}')">${displayName}</span>
                     <span class="comment-time">· ${time}</span>
                 </div>
                 <div class="comment-text">${c.content}</div>
@@ -833,75 +849,8 @@
 
     function handleSearch(e) {
         if (e.key === 'Enter') {
-            const q = document.getElementById('search-input').value.trim();
-            if (q) window.location.href = `/search/?q=${encodeURIComponent(q)}`;
-        }
-    }
-
-    // ── COMPOSE MODAL ──
-    let selectedImage = null;
-
-    function openComposeModal() { document.getElementById('compose-modal').classList.add('open'); }
-
-    function closeComposeModal() { document.getElementById('compose-modal').classList.remove('open'); clearComposeImage(); }
-
-    function clearComposeImage() {
-        selectedImage = null;
-        const inp = document.getElementById('compose-modal-image-input');
-        if (inp) inp.value = '';
-        const prev = document.getElementById('compose-modal-image-preview');
-        if (prev) prev.style.display = 'none';
-    }
-
-    function previewComposeImage(e) {
-        const file = e.target.files[0];
-        if (!file) return;
-        selectedImage = file;
-        const reader = new FileReader();
-        reader.onload = function(ev) {
-            document.getElementById('compose-modal-image-preview-img').src = ev.target.result;
-            document.getElementById('compose-modal-image-preview').style.display = 'block';
-        };
-        reader.readAsDataURL(file);
-    }
-
-    function updateComposeCharCount() {
-        const input = document.getElementById('compose-modal-input');
-        const remaining = 280 - input.value.length;
-        const counter = document.getElementById('compose-modal-char-count');
-        counter.textContent = remaining;
-        counter.className = 'char-count' + (remaining < 20 ? ' danger' : remaining < 50 ? ' warn' : '');
-    }
-
-    function insertComposeTag(tag) {
-        const input = document.getElementById('compose-modal-input');
-        input.value += tag;
-        input.focus();
-        updateComposeCharCount();
-    }
-
-    async function createPostFromModal() {
-        const input = document.getElementById('compose-modal-input');
-        const content = input.value.trim();
-        if (!content && !selectedImage) return;
-        const btn = document.getElementById('compose-modal-btn-trinar');
-        btn.disabled = true;
-        btn.textContent = '...';
-        try {
-            const formData = new FormData();
-            formData.append('content', content);
-            if (selectedImage) formData.append('image', selectedImage);
-            const res = await fetchWithAuth('/api/posts/posts/', { method: 'POST', body: formData });
-            if (!res || !res.ok) throw new Error('Error al publicar');
-            input.value = '';
-            clearComposeImage();
-            updateComposeCharCount();
-            closeComposeModal();
-        } catch (e) {
-            alert('No se pudo publicar. Intentá de nuevo.');
-        } finally {
-            btn.disabled = false;
-            btn.textContent = 'Trinar';
+            const q = e.target.value.trim();
+            if (q) window.location.href = '/search/?q=' + encodeURIComponent(q);
         }
     }
 
@@ -911,89 +860,80 @@
             if (!res || !res.ok) return;
             const users = await res.json();
             const container = document.getElementById('suggestions-container');
-            if (!container) return;
-            if (!users || users.length === 0) {
-                container.innerHTML = '<div style="padding:8px;color:var(--muted);font-size:0.85rem;">No hay sugerencias</div>';
+            if(users.length === 0) {
+                container.innerHTML = '<h3>A quién seguir</h3><p style="font-size:0.85rem;color:var(--muted)">No hay sugerencias</p>';
                 return;
             }
-            container.innerHTML = users.map(u => {
-                const initial = (u.username || '?')[0].toUpperCase();
-                const avatarHtml = u.avatar
-                    ? '<img src="' + u.avatar + '" style="width:32px;height:32px;border-radius:50%;object-fit:cover;">'
-                    : '<div class="avatar" style="width:32px;height:32px;font-size:0.75rem;">' + initial + '</div>';
-                return '<div class="suggest-user">'
-                    + avatarHtml
-                    + '<div class="suggest-info">'
-                    + '<div class="suggest-name">' + u.username + '</div>'
-                    + '<div class="suggest-handle">@' + u.username + '</div>'
-                    + '</div>'
-                    + '<button class="btn-follow-small" onclick="followUser(\'' + u.username + '\', this)">Seguir</button>'
-                    + '</div>';
-            }).join('');
-        } catch (e) {}
+            let html = '<h3>A quién seguir</h3>';
+            users.slice(0, 3).forEach(u => {
+                const initial = u.username[0].toUpperCase();
+                const avatarHtml = u.avatar 
+                    ? `<img src="${u.avatar}" style="width:38px;height:38px;border-radius:50%;object-fit:cover;">`
+                    : `<div class="avatar">${initial}</div>`;
+                html += `
+                <div class="suggest-user">
+                    ${avatarHtml}
+                    <div class="suggest-info">
+                        <div class="suggest-name" onclick="goToProfile('${u.username}')" style="cursor:pointer;">${u.first_name || u.username}</div>
+                        <div class="suggest-handle">@${u.username}</div>
+                    </div>
+                    <button class="btn-follow-small" onclick="followUser('${u.username}', this)">Seguir</button>
+                </div>`;
+            });
+            container.innerHTML = html;
+        } catch(e) {}
     }
 
     async function followUser(username, btn) {
         try {
-            const res = await fetchWithAuth('/api/users/follow/' + username + '/', { method: 'POST' });
-            if (!res || !res.ok) return;
-            const data = await res.json();
-            btn.textContent = data.status === 'siguiendo' ? 'Siguiendo' : 'Seguir';
-            btn.style.background = data.status === 'siguiendo' ? 'var(--accent)' : '';
-            btn.style.color = data.status === 'siguiendo' ? '#fff' : '';
-        } catch (e) { console.error(e); }
+            const res = await fetchWithAuth(`/api/users/follow/`, {
+                method: 'POST',
+                body: JSON.stringify({ username })
+            });
+            if(res && res.ok) {
+                btn.textContent = 'Siguiendo';
+                btn.style.background = 'var(--accent)';
+                btn.style.color = '#fff';
+                btn.disabled = true;
+            }
+        } catch(e){}
     }
 
-    function logout() {
-        localStorage.removeItem('access_token');
-        localStorage.removeItem('refresh_token');
-        window.location.href = '/api/users/logout/';
-    }
-
-    // ── THEME ──
-    function toggleTheme() {
-        const isLight = document.body.getAttribute('data-theme') === 'light';
-        document.body.setAttribute('data-theme', isLight ? '' : 'light');
-        localStorage.setItem('theme', isLight ? '' : 'light');
-        document.getElementById('btn-theme').textContent = isLight ? '🌙' : '☀️';
-    }
-
+    // --- MANEJO DEL TEMA (LIGHT/DARK) ---
     function loadTheme() {
-        const saved = localStorage.getItem('theme');
-        if (saved === 'light') {
-            document.body.setAttribute('data-theme', 'light');
-            document.getElementById('btn-theme').textContent = '☀️';
-        }
+        const theme = localStorage.getItem('theme') || 'dark';
+        document.documentElement.setAttribute('data-theme', theme);
+        document.getElementById('btn-theme').textContent = theme === 'light' ? '🌙' : '☀️';
     }
 
+    document.getElementById('btn-theme').addEventListener('click', () => {
+        const current = document.documentElement.getAttribute('data-theme');
+        const next = current === 'light' ? 'dark' : 'light';
+        document.documentElement.setAttribute('data-theme', next);
+        localStorage.setItem('theme', next);
+        document.getElementById('btn-theme').textContent = next === 'light' ? '🌙' : '☀️';
+    });
+
+    // --- EVENTOS COMPOSTER Y MODALES ---
+    const composeModal = document.getElementById('compose-modal');
+    document.getElementById('btn-post').addEventListener('click', () => composeModal.classList.add('open'));
+    document.getElementById('compose-modal-close').addEventListener('click', () => composeModal.classList.remove('open'));
+    
     document.getElementById('btn-comment').addEventListener('click', submitComment);
-    document.getElementById('comment-input').addEventListener('keydown', function(e) {
+    document.getElementById('comment-input').addEventListener('keydown', (e) => {
         if (e.key === 'Enter') submitComment();
     });
-    document.getElementById('post-detail-logout').addEventListener('click', logout);
-    document.getElementById('btn-theme').addEventListener('click', toggleTheme);
-    document.getElementById('user-card').addEventListener('click', function() { window.location.href = '/profile/'; });
-    document.getElementById('btn-back').addEventListener('click', function() { history.back(); });
-    document.getElementById('search-input').addEventListener('keydown', function(e) {
-        if (e.key === 'Enter') {
-            var q = this.value.trim();
-            if (q) window.location.href = '/search/?q=' + encodeURIComponent(q);
-        }
-    });
-    document.getElementById('btn-post').addEventListener('click', openComposeModal);
-    document.getElementById('compose-modal-close').addEventListener('click', closeComposeModal);
-    document.getElementById('compose-modal').addEventListener('click', function(e) { if (e.target === this) closeComposeModal(); });
-    document.getElementById('compose-modal-btn-trinar').addEventListener('click', createPostFromModal);
-    document.getElementById('compose-modal-input').addEventListener('input', updateComposeCharCount);
-    document.getElementById('compose-modal-image-input').addEventListener('change', previewComposeImage);
-    document.getElementById('compose-modal-btn-clear-image').addEventListener('click', clearComposeImage);
-    document.getElementById('compose-modal-image-btn').addEventListener('click', function() { document.getElementById('compose-modal-image-input').click(); });
-    document.getElementById('compose-modal-hashtag-btn').addEventListener('click', function() { insertComposeTag('#'); });
-    document.getElementById('compose-modal-mention-btn').addEventListener('click', function() { insertComposeTag('@'); });
 
+    document.getElementById('search-input').addEventListener('keydown', handleSearch);
+    document.getElementById('btn-back').addEventListener('click', () => window.history.back());
+    document.getElementById('post-detail-logout').addEventListener('click', logoutAndRedirect);
+
+    // Carga inicial
     loadTheme();
-    loadProfile().then(function() { loadPost(); loadSuggestions(); });
+    loadProfile().then(() => {
+        loadPost();
+        loadSuggestions();
+    });
 </script>
-
 </body>
 </html>

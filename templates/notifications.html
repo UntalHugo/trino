@@ -339,9 +339,9 @@
                 currentUser = await res.json();
                 var initial = (currentUser.username || '?')[0].toUpperCase();
                 var avatarEl = document.getElementById('user-avatar');
-                if (currentUser.avatar) { avatarEl.innerHTML = '<img src="' + currentUser.avatar + '">'; }
+                if (currentUser.avatar) { avatarEl.innerHTML = '<img src="' + currentUser.avatar + '" style="width:100%;height:100%;border-radius:50%;object-fit:cover;">'; }
                 else { avatarEl.textContent = initial; }
-                document.getElementById('user-name').textContent = currentUser.username;
+                document.getElementById('user-name').textContent = currentUser.first_name || currentUser.username;
                 document.getElementById('user-handle').textContent = '@' + currentUser.username;
             } catch(e) { console.error(e); }
         }
@@ -380,11 +380,12 @@
                 case 'mention': icon = '@'; text = 'te mencionó en una publicación'; break;
                 default: icon = '🔔'; text = 'interactuó con tu contenido';
             }
+            var displayName = actor.first_name || username;
             var avatarHtml = avatarUrl ? '<img src="' + avatarUrl + '">' : '<div class="initial" style="background:var(--accent);">' + initial + '</div>';
             var unreadClass = n.read ? '' : ' unread';
             return '<div class="notif-card' + unreadClass + '" onclick="goToNotif(\'' + n.notification_type + '\', \'' + username + '\')">'
                 + '<div class="notif-icon" style="background:var(--surface2);">' + avatarHtml + '</div>'
-                + '<div class="notif-body"><p><strong>' + username + '</strong> ' + text + '</p><div class="time">' + time + '</div></div>'
+                + '<div class="notif-body"><p><strong>' + displayName + '</strong> ' + text + '</p><div class="time">' + time + '</div></div>'
                 + '</div>';
         }
 
@@ -503,7 +504,7 @@
                     return '<div class="suggest-user">'
                         + avatarHtml
                         + '<div class="suggest-info">'
-                        + '<div class="suggest-name">' + u.username + '</div>'
+                        + '<div class="suggest-name">' + (u.first_name || u.username) + '</div>'
                         + '<div class="suggest-handle">@' + u.username + '</div>'
                         + '</div>'
                         + '<button class="btn-follow-small" onclick="followUser(\'' + u.username + '\', this)">Seguir</button>'

@@ -703,6 +703,11 @@
             <button class="modal-close" onclick="closeEditProfile()">✕</button>
         </div>
         <div class="modal-body">
+            <div class="modal-field" style="margin-bottom: 1rem; display: flex; flex-direction: column; gap: 0.25rem;">
+                <label for="edit-display-name" style="font-weight: 600; font-size: 0.85rem; color: var(--text);">Nombre de perfil</label>
+                <input type="text" id="edit-display-name" placeholder="Tu nombre para mostrar" maxlength="50" style="width: 100%; background: var(--bg); border: 1px solid var(--border); border-radius: 10px; padding: 0.75rem 1rem; color: var(--text); outline: none;">
+            </div>
+
             <div class="modal-field">
                 <label for="edit-avatar">Foto de perfil</label>
                 <input type="file" id="edit-avatar" accept="image/*">
@@ -881,25 +886,34 @@
         return false;
     }
 
-    async function loadProfile() {
-        if (!accessToken) {
-            const tokenObtained = await getSessionToken();
-            if (!tokenObtained) {
-                window.location.href = '/accounts/login/';
-                return;
-            }
+async function loadProfile() {
+    if (!accessToken) {
+        const tokenObtained = await getSessionToken();
+        if (!tokenObtained) {
+            window.location.href = '/accounts/login/';
+            return;
         }
-        try {
-            const res = await fetchWithAuth('/api/users/profile/');
-            if (!res || !res.ok) return;
-            currentUser = await res.json();
-            renderProfileAvatar(currentUser);
-            document.getElementById('user-name').textContent = currentUser.username;
-            document.getElementById('user-handle').textContent = '@' + currentUser.username;
-        } catch (e) { console.error('Error cargando perfil:', e); }
     }
+    try {
+        const res = await fetchWithAuth('/api/users/profile/');
+        if (!res || !res.ok) return;
+        currentUser = await res.json();
+        
+        renderProfileAvatar(currentUser);
+        
+        // ─── AQUÍ REEMPLAZAMOS PARA QUE LEA EL APODO ───
+        const displayName = currentUser.first_name ? currentUser.first_name : currentUser.username;
+        
+        if (document.getElementById('user-name')) {
+            document.getElementById('user-name').textContent = displayName; // Usa el Display Name
+        }
+        if (document.getElementById('user-handle')) {
+            document.getElementById('user-handle').textContent = '@' + currentUser.username;
+        }
+    } catch (e) { console.error('Error cargando perfil:', e); }
+}
 
-    async function loadProfilePage() {
+  async function loadProfilePage() {
         const params = new URLSearchParams(window.location.search);
         const username = params.get('username');
 
@@ -919,8 +933,20 @@
             if (!userData) throw new Error('Usuario no encontrado');
 
             profileUser = userData;
-            renderProfile(userData);
+            
+            // ─── AQUÍ HACEMOS EL AJUSTE DINÁMICO DEL NOMBRE ───
+            // Si el usuario tiene un first_name (Nombre de Perfil), usamos ese. Si no, usamos su username.
+            const nameToShow = userData.first_name ? userData.first_name : userData.username;
+            
+            // Buscá las IDs reales que tengan tus elementos HTML del nombre en la página de perfil. Por ejemplo:
+            const nameEl = document.getElementById('profile-display-name');
+            const handleEl = document.getElementById('profile-handle');
+            
+            if (nameEl) nameEl.textContent = nameToShow;
+            if (handleEl) handleEl.textContent = '@' + userData.username;
+            // ──────────────────────────────────────────────────
 
+            renderProfile(userData);
             loadPosts(userData.username);
         } catch (e) {
             showError('No se pudo cargar el perfil.');
@@ -960,24 +986,29 @@
         } catch (e) {}
     }
 
-    function renderProfile(user) {
-        document.getElementById('profile-name').textContent = user.username;
-        document.getElementById('profile-username').textContent = '@' + user.username;
-        document.getElementById('profile-bio').textContent = user.bio || '';
-        document.getElementById('stat-following').textContent = user.following_count || 0;
-        document.getElementById('stat-followers').textContent = user.followers_count || 0;
-        renderProfileAvatar(user);
+   function renderProfile(user) {
+    // ─── PRIORIZAMOS EL NOMBRE DE PERFIL (first_name) ───
+    // Si tiene first_name configurado lo usa, si no, usa el username como fallback
+    const displayName = user.first_name ? user.first_name : user.username;
+    
+    document.getElementById('profile-name').textContent = displayName;
+    document.getElementById('profile-username').textContent = '@' + user.username;
+    document.getElementById('profile-bio').textContent = user.bio || '';
+    document.getElementById('stat-following').textContent = user.following_count || 0;
+    document.getElementById('stat-followers').textContent = user.followers_count || 0;
+    renderProfileAvatar(user);
 
-        const title = user.username + ' (@' + user.username + ') — Trino';
-        document.title = title;
+    // El título de la pestaña del navegador también queda más prolijo combinando ambos
+    const title = displayName + ' (@' + user.username + ') — Trino';
+    document.title = title;
 
-        if (currentUser && currentUser.username !== user.username) {
-            const btn = document.getElementById('btn-follow');
-            btn.style.display = 'inline-block';
-        } else if (currentUser) {
-            document.getElementById('btn-edit-profile').style.display = 'inline-block';
-        }
+    if (currentUser && currentUser.username !== user.username) {
+        const btn = document.getElementById('btn-follow');
+        btn.style.display = 'inline-block';
+    } else if (currentUser) {
+        document.getElementById('btn-edit-profile').style.display = 'inline-block';
     }
+}
 
     function renderPosts(posts) {
         const container = document.getElementById('posts-container');
@@ -996,7 +1027,7 @@
     function renderPost(post) {
         const author = post.author || post.user || {};
         const username = typeof author === 'string' ? author : (author.username || 'usuario');
-        const displayName = typeof author === 'string' ? author : username;
+        const displayName = typeof author === 'string' ? author : (author.first_name || username);
         const avatarUrl = typeof author === 'object' ? (author.avatar || null) : null;
         const initial = (typeof author === 'string' ? author : username)[0].toUpperCase();
         const content = formatContent(post.content || '');
@@ -1012,7 +1043,7 @@
             <div class="post-body">
                 <div class="post-meta">
                     <span class="post-author">${displayName}</span>
-                    <span class="post-handle">@${displayName}</span>
+                    <span class="post-handle">@${username}</span>
                     <span class="post-handle">·</span>
                     <span class="post-time">${time}</span>
                 </div>
@@ -1177,14 +1208,14 @@
                 const avatarHtml = u.avatar
                     ? '<img src="' + u.avatar + '" style="width:32px;height:32px;border-radius:50%;object-fit:cover;">'
                     : '<div class="avatar" style="width:32px;height:32px;font-size:0.75rem;">' + initial + '</div>';
-                return '<div class="suggest-user">'
-                    + avatarHtml
-                    + '<div class="suggest-info">'
-                    + '<div class="suggest-name">' + u.username + '</div>'
-                    + '<div class="suggest-handle">@' + u.username + '</div>'
-                    + '</div>'
-                    + '<button class="btn-follow-small" onclick="followUser(\'' + u.username + '\', this)">Seguir</button>'
-                    + '</div>';
+                    return '<div class="suggest-user">'
+                        + avatarHtml
+                        + '<div class="suggest-info">'
+                        + '<div class="suggest-name">' + (u.first_name || u.username) + '</div>'
+                        + '<div class="suggest-handle">@' + u.username + '</div>'
+                        + '</div>'
+                        + '<button class="btn-follow-small" onclick="followUser(\'' + u.username + '\', this)">Seguir</button>'
+                        + '</div>';
             }).join('');
         } catch (e) {}
     }
@@ -1231,7 +1262,7 @@
                     : '<div class="avatar" style="width:38px;height:38px;font-size:0.875rem;">' + initial + '</div>';
                 var isSelf = currentUser && currentUser.username === u.username;
                 var followBtn = isSelf ? '' : '<button class="btn-follow-small" onclick="followUser(\'' + u.username + '\', this)">Seguir</button>';
-                return '<div class="follow-user">' + avatarHtml + '<div class="follow-user-info"><div class="follow-user-name">' + u.username + '</div><div class="follow-user-handle">@' + u.username + '</div></div>' + followBtn + '</div>';
+                return '<div class="follow-user">' + avatarHtml + '<div class="follow-user-info"><div class="follow-user-name">' + (u.first_name || u.username) + '</div><div class="follow-user-handle">@' + u.username + '</div></div>' + followBtn + '</div>';
             }).join('');
         } catch(e) {
             container.innerHTML = '<div style="padding:1rem;text-align:center;color:var(--muted);">Error al cargar</div>';
@@ -1245,43 +1276,87 @@
     }
 
     function openEditProfile() {
-        document.getElementById('edit-bio').value = (profileUser?.bio || '');
-        document.getElementById('edit-profile-modal').classList.add('open');
+    if (currentUser) {
+        // Precargamos los tres campos con lo que el backend ya cargó en memoria global
+        document.getElementById('edit-display-name').value = currentUser.first_name || '';
+        document.getElementById('edit-bio').value = currentUser.bio || '';
+        document.getElementById('edit-avatar').value = ''; // Reseteamos el input file
+    }
+    document.getElementById('edit-profile-modal').classList.add('open');
+}
+
+function closeEditProfile() {
+    document.getElementById('edit-profile-modal').classList.remove('open');
+}
+
+function closeEditProfile() {
+    document.getElementById('edit-profile-modal').classList.remove('open');
+}
+
+async function saveProfile() {
+    // 1. Capturamos los tres valores (incluyendo el nuevo campo del nombre)
+    const displayName = document.getElementById('edit-display-name').value.trim();
+    const bio = document.getElementById('edit-bio').value.trim();
+    const avatarFile = document.getElementById('edit-avatar').files[0];
+    const btn = document.getElementById('btn-save-profile');
+
+    // Validación básica
+    if (!displayName) {
+        alert('El nombre de perfil no puede estar vacío.');
+        return;
     }
 
-    function closeEditProfile() {
-        document.getElementById('edit-profile-modal').classList.remove('open');
-    }
+    btn.disabled = true;
+    btn.textContent = 'Guardando...';
 
-    async function saveProfile() {
-        const bio = document.getElementById('edit-bio').value.trim();
-        const avatarFile = document.getElementById('edit-avatar').files[0];
-        const btn = document.getElementById('btn-save-profile');
-        btn.disabled = true;
-        btn.textContent = 'Guardando...';
-        try {
-            const formData = new FormData();
-            formData.append('bio', bio);
-            if (avatarFile) {
-                formData.append('avatar', avatarFile);
-            }
-            const res = await fetchWithAuthMultipart('/api/users/profile/', {
-                method: 'PATCH',
-                body: formData
-            });
-            if (!res || !res.ok) throw new Error();
-            const updated = await res.json();
-            profileUser = updated;
-            document.getElementById('profile-bio').textContent = updated.bio || '';
-            renderProfileAvatar(updated);
-            closeEditProfile();
-        } catch (e) {
-            alert('No se pudo guardar el perfil.');
-        } finally {
-            btn.disabled = false;
-            btn.textContent = 'Guardar cambios';
+    try {
+        // 2. Metemos todo dentro del FormData
+        const formData = new FormData();
+        formData.append('first_name', displayName); // Enviamos el nombre
+        formData.append('bio', bio);
+        if (avatarFile) {
+            formData.append('avatar', avatarFile);
         }
+
+        // 3. Hacemos la petición usando tu función Multipart
+        const res = await fetchWithAuthMultipart('/api/users/profile/', {
+            method: 'PATCH',
+            body: formData
+        });
+
+        if (!res || !res.ok) throw new Error();
+        
+        // 4. El backend responde con los datos actualizados
+        const updated = await res.json();
+        profileUser = updated;
+
+        // 5. Forzamos la actualización visual inmediata en la pantalla actual
+        const nameToShow = updated.first_name ? updated.first_name : updated.username;
+        if (document.getElementById('profile-name')) {
+            document.getElementById('profile-name').textContent = nameToShow;
+        }
+        if (document.getElementById('user-name')) {
+            document.getElementById('user-name').textContent = nameToShow;
+        }
+        
+        if (document.getElementById('profile-bio')) {
+            document.getElementById('profile-bio').textContent = updated.bio || '';
+        }
+        renderProfileAvatar(updated);
+        
+        // 6. Sincronizamos la barra lateral/global volviendo a pedir el perfil al servidor
+        await loadProfile(); 
+        
+        closeEditProfile();
+        
+    } catch (e) {
+        console.error(e);
+        alert('No se pudo guardar el perfil.');
+    } finally {
+        btn.disabled = false;
+        btn.textContent = 'Guardar cambios';
     }
+}
 
     function renderProfileAvatar(user) {
         const avatarEl = document.getElementById('profile-avatar');

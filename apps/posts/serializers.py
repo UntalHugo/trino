@@ -14,7 +14,7 @@ class HashtagSerializer(serializers.ModelSerializer):
 class PostUserSerializer(serializers.ModelSerializer):
     class Meta:
         model = User
-        fields = ['id', 'username', 'avatar']
+        fields = ['id', 'username', 'first_name', 'avatar']
 
 
 class PostSerializer(serializers.ModelSerializer):
