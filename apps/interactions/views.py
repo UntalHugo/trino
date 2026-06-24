@@ -1,9 +1,12 @@
 from rest_framework import generics, permissions
 from rest_framework.decorators import api_view, permission_classes
 from rest_framework.response import Response
+from django.contrib.auth import get_user_model
 from .models import Like, Comment, Message, Notification
 from .serializers import LikeSerializer, CommentSerializer, MessageSerializer, NotificationSerializer
 from apps.posts.models import Post
+
+User = get_user_model()
 
 
 @api_view(['POST'])
@@ -76,3 +79,19 @@ class NotificationListView(generics.ListAPIView):
 def mark_notifications_read(request):
     Notification.objects.filter(user=request.user, read=False).update(read=True)
     return Response({'status': 'notificaciones marcadas como leídas'})
+
+
+@api_view(['POST'])
+@permission_classes([permissions.IsAuthenticated])
+def mark_messages_read(request):
+    partner_username = request.data.get('partner_username')
+    if not partner_username:
+        return Response({'error': 'partner_username requerido'}, status=400)
+    try:
+        partner = User.objects.get(username=partner_username)
+    except User.DoesNotExist:
+        return Response({'error': 'Usuario no encontrado'}, status=404)
+    Message.objects.filter(
+        sender=partner, receiver=request.user, read=False
+    ).update(read=True)
+    return Response({'status': 'mensajes marcados como leídos'})
