@@ -403,6 +403,22 @@
             border-bottom: 1px solid var(--border);
         }
 
+        /* ── COMPOSE MODAL ── */
+        .compose-modal-overlay { display: none; position: fixed; inset: 0; background: rgba(0,0,0,0.6); backdrop-filter: blur(4px); z-index: 200; justify-content: center; align-items: center; }
+        .compose-modal-overlay.open { display: flex; }
+        .compose-modal { background: var(--surface); border: 1px solid var(--border); border-radius: 20px; width: 520px; max-width: 90vw; box-shadow: 0 20px 60px rgba(0,0,0,0.5); }
+        .compose-modal-header { display: flex; align-items: center; justify-content: space-between; padding: 1rem 1.25rem; border-bottom: 1px solid var(--border); }
+        .compose-modal-header h3 { font-family: 'Syne', sans-serif; font-size: 1rem; font-weight: 700; }
+        .compose-modal-close { background: none; border: none; color: var(--muted); font-size: 1.25rem; cursor: pointer; padding: 0.25rem; border-radius: 6px; transition: color 0.15s; }
+        .compose-modal-close:hover { color: var(--text); }
+        .compose-modal-body { padding: 1.25rem; }
+        .compose-modal-composer { display: flex; gap: 0.75rem; }
+        .compose-modal-input-wrap { flex: 1; }
+        .compose-modal-input-wrap textarea { width: 100%; background: transparent; border: none; outline: none; color: var(--text); font-family: 'DM Sans', sans-serif; font-size: 1rem; resize: none; min-height: 80px; }
+        .compose-modal-input-wrap textarea::placeholder { color: var(--muted); }
+        .compose-modal-actions { display: flex; align-items: center; justify-content: space-between; padding-top: 0.75rem; border-top: 1px solid var(--border); margin-top: 0.5rem; }
+        .compose-modal-tools { display: flex; gap: 0.5rem; }
+
         @media (max-width: 1024px) {
             body { grid-template-columns: 70px 1fr; }
             .sidebar-right { display: none; }
@@ -430,21 +446,23 @@
     <a class="nav-item active" href="/search/">
         <span class="nav-icon">🔍</span> Explorar
     </a>
-    <a class="nav-item" href="/api/notifications/" id="nav-notifs">
+    <a class="nav-item" href="/notifications/" id="nav-notifs">
         <span class="nav-icon">🔔</span> Notificaciones
     </a>
-    <a class="nav-item" href="/api/messages/" id="nav-messages">
+    <a class="nav-item" href="/messages/" id="nav-messages">
         <span class="nav-icon">✉️</span> Mensajes
     </a>
     <a class="nav-item" href="/profile/" id="nav-profile">
         <span class="nav-icon">👤</span> Perfil
     </a>
 
-    <button class="btn-logout" onclick="logout()">🚪 Cerrar sesión</button>
+    <button class="btn-post" id="btn-post">Trinar</button>
 
-    <button class="btn-theme" onclick="toggleTheme()" id="btn-theme" title="Cambiar tema">🌙</button>
+    <button class="btn-logout" id="btn-logout">🚪 Cerrar sesión</button>
 
-    <div class="user-card" id="user-card" onclick="window.location.href='/profile/'">
+    <button class="btn-theme" id="btn-theme" title="Cambiar tema">🌙</button>
+
+    <div class="user-card" id="user-card">
         <div class="avatar" id="user-avatar">?</div>
         <div class="user-info">
             <div class="user-name" id="user-name">Cargando...</div>
@@ -456,7 +474,7 @@
 <main class="main-content">
     <div class="search-header">
         <h2>Buscar</h2>
-        <input type="text" class="search-main-input" id="search-main-input" placeholder="Buscá personas, trinos o hashtags..." onkeydown="handleSearch(event)" autofocus>
+        <input type="text" class="search-main-input" id="search-main-input" placeholder="Buscá personas, trinos o hashtags..." autofocus>
     </div>
 
     <div class="search-tabs" id="search-tabs" style="display:none;">
@@ -477,7 +495,45 @@
 </main>
 
 <aside class="sidebar-right">
+    <div class="widget">
+        <h3>A quién seguir</h3>
+        <div id="suggestions-container"></div>
+    </div>
 </aside>
+
+<!-- COMPOSE MODAL -->
+<div class="compose-modal-overlay" id="compose-modal">
+    <div class="compose-modal">
+        <div class="compose-modal-header">
+            <h3>Crear publicación</h3>
+            <button class="compose-modal-close" id="compose-modal-close">✕</button>
+        </div>
+        <div class="compose-modal-body">
+            <div class="compose-modal-composer">
+                <div class="avatar" id="compose-modal-avatar">?</div>
+                <div class="compose-modal-input-wrap">
+                    <textarea id="compose-modal-input" placeholder="¿Qué está pasando?" maxlength="280" rows="3"></textarea>
+                    <div class="compose-modal-actions">
+                        <div class="compose-modal-tools">
+                            <button class="tool-btn" id="compose-modal-image-btn" title="Imagen">🖼️</button>
+                            <button class="tool-btn" id="compose-modal-hashtag-btn" title="Hashtag">＃</button>
+                            <button class="tool-btn" id="compose-modal-mention-btn" title="Mencionar">@</button>
+                        </div>
+                        <div style="display:flex;align-items:center;">
+                            <span class="char-count" id="compose-modal-char-count">280</span>
+                            <button class="btn-trinar" id="compose-modal-btn-trinar">Trinar</button>
+                        </div>
+                    </div>
+                    <input type="file" id="compose-modal-image-input" accept="image/*" style="display:none">
+                    <div id="compose-modal-image-preview" style="display:none;position:relative;margin-top:0.5rem;">
+                        <img id="compose-modal-image-preview-img" style="max-height:200px;border-radius:12px;border:1px solid var(--border);width:100%;object-fit:cover;">
+                        <button id="compose-modal-btn-clear-image" style="position:absolute;top:8px;right:8px;background:rgba(0,0,0,0.7);border:none;border-radius:50%;width:28px;height:28px;color:#fff;cursor:pointer;font-size:0.9rem;">✕</button>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
 
 <script>
     const API = '';
@@ -737,6 +793,101 @@
         } catch (e) { console.error('Error en follow:', e); }
     }
 
+    // ── COMPOSE MODAL ──
+    let selectedImage = null;
+
+    function openComposeModal() { document.getElementById('compose-modal').classList.add('open'); }
+
+    function closeComposeModal() { document.getElementById('compose-modal').classList.remove('open'); clearComposeImage(); }
+
+    function clearComposeImage() {
+        selectedImage = null;
+        const inp = document.getElementById('compose-modal-image-input');
+        if (inp) inp.value = '';
+        const prev = document.getElementById('compose-modal-image-preview');
+        if (prev) prev.style.display = 'none';
+    }
+
+    function previewComposeImage(e) {
+        const file = e.target.files[0];
+        if (!file) return;
+        selectedImage = file;
+        const reader = new FileReader();
+        reader.onload = function(ev) {
+            document.getElementById('compose-modal-image-preview-img').src = ev.target.result;
+            document.getElementById('compose-modal-image-preview').style.display = 'block';
+        };
+        reader.readAsDataURL(file);
+    }
+
+    function updateComposeCharCount() {
+        const input = document.getElementById('compose-modal-input');
+        const remaining = 280 - input.value.length;
+        const counter = document.getElementById('compose-modal-char-count');
+        counter.textContent = remaining;
+        counter.className = 'char-count' + (remaining < 20 ? ' danger' : remaining < 50 ? ' warn' : '');
+    }
+
+    function insertComposeTag(tag) {
+        const input = document.getElementById('compose-modal-input');
+        input.value += tag;
+        input.focus();
+        updateComposeCharCount();
+    }
+
+    async function createPostFromModal() {
+        const input = document.getElementById('compose-modal-input');
+        const content = input.value.trim();
+        if (!content && !selectedImage) return;
+        const btn = document.getElementById('compose-modal-btn-trinar');
+        btn.disabled = true;
+        btn.textContent = '...';
+        try {
+            const formData = new FormData();
+            formData.append('content', content);
+            if (selectedImage) formData.append('image', selectedImage);
+            const res = await fetchWithAuth('/api/posts/posts/', { method: 'POST', body: formData });
+            if (!res || !res.ok) throw new Error('Error al publicar');
+            input.value = '';
+            clearComposeImage();
+            updateComposeCharCount();
+            closeComposeModal();
+        } catch (e) {
+            showError('No se pudo publicar. Intentá de nuevo.');
+        } finally {
+            btn.disabled = false;
+            btn.textContent = 'Trinar';
+        }
+    }
+
+    async function loadSuggestions() {
+        try {
+            const res = await fetchWithAuth('/api/users/suggestions/');
+            if (!res || !res.ok) return;
+            const users = await res.json();
+            const container = document.getElementById('suggestions-container');
+            if (!container) return;
+            if (!users || users.length === 0) {
+                container.innerHTML = '<div style="padding:8px;color:var(--muted);font-size:0.85rem;">No hay sugerencias</div>';
+                return;
+            }
+            container.innerHTML = users.map(u => {
+                const initial = (u.username || '?')[0].toUpperCase();
+                const avatarHtml = u.avatar
+                    ? '<img src="' + u.avatar + '" style="width:32px;height:32px;border-radius:50%;object-fit:cover;">'
+                    : '<div class="avatar" style="width:32px;height:32px;font-size:0.75rem;">' + initial + '</div>';
+                return '<div class="suggest-user">'
+                    + avatarHtml
+                    + '<div class="suggest-info">'
+                    + '<div class="suggest-name">' + u.username + '</div>'
+                    + '<div class="suggest-handle">@' + u.username + '</div>'
+                    + '</div>'
+                    + '<button class="btn-follow-small" onclick="followUser(\'' + u.username + '\', this)">Seguir</button>'
+                    + '</div>';
+            }).join('');
+        } catch (e) {}
+    }
+
     function showError(msg) {
         const banner = document.getElementById('error-banner');
         banner.textContent = '⚠ ' + msg;
@@ -757,6 +908,30 @@
         localStorage.removeItem('refresh_token');
         window.location.href = '/api/users/logout/';
     }
+
+    // ── EVENT LISTENERS ──
+    document.getElementById('btn-logout').addEventListener('click', logout);
+    document.getElementById('btn-theme').addEventListener('click', toggleTheme);
+    document.getElementById('user-card').addEventListener('click', function() { window.location.href = '/profile/'; });
+    document.getElementById('btn-post').addEventListener('click', openComposeModal);
+    document.getElementById('compose-modal-close').addEventListener('click', closeComposeModal);
+    document.getElementById('compose-modal').addEventListener('click', function(e) { if (e.target === this) closeComposeModal(); });
+    document.getElementById('compose-modal-btn-trinar').addEventListener('click', createPostFromModal);
+    document.getElementById('compose-modal-input').addEventListener('input', updateComposeCharCount);
+    document.getElementById('compose-modal-image-input').addEventListener('change', previewComposeImage);
+    document.getElementById('compose-modal-btn-clear-image').addEventListener('click', clearComposeImage);
+    document.getElementById('compose-modal-image-btn').addEventListener('click', function() { document.getElementById('compose-modal-image-input').click(); });
+    document.getElementById('compose-modal-hashtag-btn').addEventListener('click', function() { insertComposeTag('#'); });
+    document.getElementById('compose-modal-mention-btn').addEventListener('click', function() { insertComposeTag('@'); });
+    document.getElementById('search-main-input').addEventListener('keydown', function(e) {
+        if (e.key === 'Enter') {
+            const q = this.value.trim();
+            if (q) {
+                window.history.pushState({}, '', '/search/?q=' + encodeURIComponent(q));
+                doSearch(q);
+            }
+        }
+    });
 
     const params = new URLSearchParams(window.location.search);
     const initialQuery = params.get('q');
@@ -782,7 +957,7 @@
     }
 
     loadTheme();
-    loadProfile();
+    loadProfile().then(loadSuggestions);
 </script>
 
 </body>
