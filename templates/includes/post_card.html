@@ -1,0 +1,41 @@
+<article class="card fade-in">
+  <div class="post-header">
+    <img src="{{ post.author.avatar_url|default:'/static/img/default-avatar.svg' }}" alt="" class="post-avatar">
+    <div>
+      <div class="post-author">{{ post.author.username }}</div>
+      <div class="post-date">{{ post.created_at|date:'d/m/Y H:i' }}</div>
+    </div>
+  </div>
+  <div class="post-content">{{ post.content }}</div>
+  {% if post.image %}
+    <img src="{{ post.image }}" alt="Post image" class="post-image" loading="lazy">
+  {% endif %}
+  <div class="post-actions">
+    <button class="btn-like {% if post.is_liked %}liked{% endif %}"
+            data-post-id="{{ post.id }}"
+            data-liked="{{ post.is_liked|yesno:'true,false' }}"
+            onclick="handleLike(this)">
+      <span>❤</span>
+      <span class="like-count">{{ post.likes_count|default:0 }}</span>
+    </button>
+  </div>
+</article>
+<template id="post-template">
+  <article class="card">
+    <div class="post-header">
+      <img src="" alt="" class="post-avatar">
+      <div>
+        <div class="post-author"></div>
+        <div class="post-date"></div>
+      </div>
+    </div>
+    <div class="post-content"></div>
+    <img src="" alt="Post image" class="post-image hidden">
+    <div class="post-actions">
+      <button class="btn-like" data-post-id="" data-liked="false">
+        <span>❤</span>
+        <span class="like-count">0</span>
+      </button>
+    </div>
+  </article>
+</template>

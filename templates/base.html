@@ -1,0 +1,30 @@
+<!DOCTYPE html>
+{% load static %}
+<html lang="es">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta name="csrf-token" content="{{ csrf_token }}">
+  <title>{% block title %}Trino{% endblock %}</title>
+  <link rel="stylesheet" href="{% static 'css/style.css' %}">
+  {% block extra_head %}{% endblock %}
+</head>
+<body>
+  <nav class="navbar">
+    <a href="{% url 'feed' %}">Trino</a>
+    <div>
+      <a href="{% url 'feed' %}" style="margin-right:1rem">Inicio</a>
+      <a href="{% url 'search' %}" style="margin-right:1rem">Buscar</a>
+      <a href="{% url 'messages' %}" style="margin-right:1rem">Mensajes</a>
+      <a href="{% url 'profile' request.user.id %}">Perfil</a>
+    </div>
+  </nav>
+
+  <main class="container">
+    {% block content %}{% endblock %}
+  </main>
+
+  <script src="{% static 'js/main.js' %}"></script>
+  {% block extra_js %}{% endblock %}
+</body>
+</html>
