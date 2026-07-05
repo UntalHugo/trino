@@ -634,8 +634,56 @@
             height: auto;
             object-fit: cover;
             border-radius: 12px; /* Para que quede lindo con los bordes redondeados */
-            display: block;
-}
+            }
+        /* CSS Skeleton loaders */
+        .skeleton {
+            background-color: var(--border) !important;
+            background-image: linear-gradient(
+                90deg,
+                rgba(255, 255, 255, 0),
+                rgba(255, 255, 255, 0.05),
+                rgba(255, 255, 255, 0)
+            );
+            background-size: 200px 100%;
+            background-repeat: no-repeat;
+            background-position: -150px 0;
+            animation: shimmer 1.5s infinite;
+        }
+        @keyframes shimmer {
+            100% {
+                background-position: calc(100% + 150px) 0;
+            }
+        }
+        /* Micro-interactions */
+        .btn-post, .btn-comment, .nav-item, .user-card, .btn-logout, .btn-theme {
+            transition: transform 0.2s cubic-bezier(0.175, 0.885, 0.32, 1.275), background 0.15s, color 0.15s, box-shadow 0.2s;
+        }
+        .btn-post:active, .btn-comment:active {
+            transform: scale(0.95);
+        }
+        .nav-item:active {
+            transform: scale(0.98);
+        }
+        .post {
+            transition: border-color 0.2s, background 0.15s;
+            animation: fadeInPost 0.3s ease-out;
+        }
+        @keyframes fadeInPost {
+            from { opacity: 0; transform: translateY(10px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+        .btn-like span {
+            display: inline-block;
+            transition: transform 0.25s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+        }
+        .btn-like.liked span {
+            animation: popLike 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+        }
+        @keyframes popLike {
+            0% { transform: scale(1); }
+            50% { transform: scale(1.4); }
+            100% { transform: scale(1); }
+        }
     </style>
 </head>
 <body>
@@ -908,13 +956,32 @@
     }
 
     // ── POSTS ──
+    let nextFeedUrl = '';
+
+    function showSkeletons() {
+        const container = document.getElementById('posts-container');
+        container.innerHTML = Array(3).fill(0).map(() => `
+            <div class="post post-skeleton" style="opacity: 0.7;">
+                <div class="avatar skeleton" style="width: 48px; height: 48px; border-radius: 50%; background: var(--border);"></div>
+                <div class="post-body" style="flex: 1; display: flex; flex-direction: column; gap: 0.5rem;">
+                    <div class="skeleton" style="height: 14px; width: 40%; background: var(--border); border-radius: 4px;"></div>
+                    <div class="skeleton" style="height: 12px; width: 90%; background: var(--border); border-radius: 4px;"></div>
+                    <div class="skeleton" style="height: 12px; width: 70%; background: var(--border); border-radius: 4px;"></div>
+                </div>
+            </div>
+        `).join('');
+    }
+
     async function loadFeed() {
+        showSkeletons();
         try {
             const res = await fetchWithAuth('/api/posts/posts/');
             if (!res || !res.ok) throw new Error('Error al cargar el feed');
             const data = await res.json();
             const posts = data.results || data;
+            nextFeedUrl = data.next || '';
             renderPosts(posts);
+            renderLoadMoreButton();
         } catch (e) {
             showError('No se pudo cargar el feed. Intentá de nuevo.');
             document.getElementById('posts-container').innerHTML = `
@@ -924,6 +991,50 @@
                     <p>Seguí a alguien para ver sus publicaciones acá.</p>
                 </div>`;
         }
+    }
+
+    async function loadMoreFeed() {
+        if (!nextFeedUrl) return;
+        const btn = document.getElementById('btn-load-more');
+        if (btn) {
+            btn.disabled = true;
+            btn.textContent = 'Cargando más...';
+        }
+        try {
+            const res = await fetchWithAuth(nextFeedUrl);
+            if (!res || !res.ok) throw new Error();
+            const data = await res.json();
+            const posts = data.results || data;
+            nextFeedUrl = data.next || '';
+            
+            const container = document.getElementById('posts-container');
+            const btnContainer = document.getElementById('load-more-container');
+            if (btnContainer) btnContainer.remove();
+            
+            posts.forEach(post => {
+                container.insertAdjacentHTML('beforeend', renderPost(post));
+            });
+            renderLoadMoreButton();
+        } catch (e) {
+            console.error('Error al cargar más posts:', e);
+            if (btn) {
+                btn.disabled = false;
+                btn.textContent = 'Cargar más';
+            }
+        }
+    }
+
+    function renderLoadMoreButton() {
+        const btnContainer = document.getElementById('load-more-container');
+        if (btnContainer) btnContainer.remove();
+        
+        if (!nextFeedUrl) return;
+        const container = document.getElementById('posts-container');
+        container.insertAdjacentHTML('afterend', `
+            <div id="load-more-container" style="text-align: center; padding: 1.5rem;">
+                <button id="btn-load-more" class="btn-post" style="max-width: 200px; margin: 0 auto;" onclick="loadMoreFeed()">Cargar más</button>
+            </div>
+        `);
     }
 
     function renderPosts(posts) {
@@ -1017,6 +1128,47 @@
         document.getElementById('image-preview').style.display = 'none';
     }
 
+    function compressImage(file, maxWidth = 1000, quality = 0.75) {
+        return new Promise((resolve) => {
+            if (!file || !file.type.startsWith('image/')) {
+                resolve(file);
+                return;
+            }
+            const reader = new FileReader();
+            reader.readAsDataURL(file);
+            reader.onload = event => {
+                const img = new Image();
+                img.src = event.target.result;
+                img.onload = () => {
+                    const canvas = document.createElement('canvas');
+                    let width = img.width;
+                    let height = img.height;
+                    if (width > maxWidth) {
+                        height = Math.round((height * maxWidth) / width);
+                        width = maxWidth;
+                    }
+                    canvas.width = width;
+                    canvas.height = height;
+                    const ctx = canvas.getContext('2d');
+                    ctx.drawImage(img, 0, 0, width, height);
+                    canvas.toBlob(blob => {
+                        if (blob) {
+                            const compressedFile = new File([blob], file.name.substring(0, file.name.lastIndexOf('.')) + '.jpg', {
+                                type: 'image/jpeg',
+                                lastModified: Date.now()
+                            });
+                            resolve(compressedFile);
+                        } else {
+                            resolve(file);
+                        }
+                    }, 'image/jpeg', quality);
+                };
+                img.onerror = () => resolve(file);
+            };
+            reader.onerror = () => resolve(file);
+        });
+    }
+
     async function createPost() {
         const input = document.getElementById('post-input');
         const content = input.value.trim();
@@ -1030,7 +1182,8 @@
             const formData = new FormData();
             formData.append('content', content);
             if (selectedImage) {
-                formData.append('image', selectedImage);
+                const compressed = await compressImage(selectedImage);
+                formData.append('image', compressed);
             }
 
             const res = await fetchWithAuthMultipart('/api/posts/posts/', {

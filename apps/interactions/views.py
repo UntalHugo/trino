@@ -19,7 +19,19 @@ def toggle_like(request, post_id):
     like, created = Like.objects.get_or_create(user=request.user, post=post)
     if not created:
         like.delete()
+        Notification.objects.filter(
+            user=post.user,
+            actor=request.user,
+            notification_type=Notification.LIKE
+        ).delete()
         return Response({'status': 'unliked', 'likes_count': post.likes.count()})
+    
+    if post.user != request.user:
+        Notification.objects.create(
+            user=post.user,
+            actor=request.user,
+            notification_type=Notification.LIKE
+        )
     return Response({'status': 'liked', 'likes_count': post.likes.count()})
 
 
@@ -37,6 +49,12 @@ class CommentListCreateView(generics.ListCreateAPIView):
             from rest_framework.exceptions import NotFound
             raise NotFound('Post no encontrado.')
         serializer.save(user=self.request.user, post=post)
+        if post.user != self.request.user:
+            Notification.objects.create(
+                user=post.user,
+                actor=self.request.user,
+                notification_type=Notification.COMMENT
+            )
 
 
 class MessageListCreateView(generics.ListCreateAPIView):

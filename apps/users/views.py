@@ -32,11 +32,23 @@ def follow_user(request, username):
     if target == request.user:
         return Response({'error': 'No podés seguirte a vos mismo.'}, status=400)
 
+    from apps.interactions.models import Notification
+
     if target in request.user.following.all():
         request.user.following.remove(target)
+        Notification.objects.filter(
+            user=target,
+            actor=request.user,
+            notification_type=Notification.FOLLOW
+        ).delete()
         return Response({'status': 'dejaste de seguir'})
     else:
         request.user.following.add(target)
+        Notification.objects.create(
+            user=target,
+            actor=request.user,
+            notification_type=Notification.FOLLOW
+        )
         return Response({'status': 'siguiendo'})
 
 

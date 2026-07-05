@@ -49,9 +49,16 @@ class Post(models.Model):
             self.hashtags.add(hashtag)
         from django.contrib.auth import get_user_model
         User = get_user_model()
+        from apps.interactions.models import Notification
         for username in self.extract_mentions():
             try:
                 user = User.objects.get(username=username)
                 self.mentions.add(user)
+                if user != self.user:
+                    Notification.objects.get_or_create(
+                        user=user,
+                        actor=self.user,
+                        notification_type=Notification.MENTION
+                    )
             except User.DoesNotExist:
                 pass

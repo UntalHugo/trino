@@ -9,15 +9,21 @@
     <p>Redirigiendo al feed...</p>
     <script>
         (async function() {
+            let success = false;
             try {
                 const res = await fetch('/api/users/session-token/', { credentials: 'include' });
                 if (res.ok) {
                     const data = await res.json();
                     localStorage.setItem('access_token', data.access);
                     localStorage.setItem('refresh_token', data.refresh);
+                    success = true;
                 }
             } catch (e) {}
-            window.location.href = '/feed/';
+            if (success) {
+                window.location.href = '/feed/';
+            } else {
+                window.location.href = '/accounts/login/?error=oauth_failed';
+            }
         })();
     </script>
 </body>

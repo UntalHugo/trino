@@ -886,9 +886,8 @@
 
     async function followUser(username, btn) {
         try {
-            const res = await fetchWithAuth(`/api/users/follow/`, {
-                method: 'POST',
-                body: JSON.stringify({ username })
+            const res = await fetchWithAuth(`/api/users/follow/${username}/`, {
+                method: 'POST'
             });
             if(res && res.ok) {
                 btn.textContent = 'Siguiendo';
